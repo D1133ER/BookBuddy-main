@@ -1,0 +1,27 @@
+# robots.txt for BookBuddy
+# https://www.robotstxt.org/
+
+User-agent: *
+Allow: /
+
+# Allow important pages
+Allow: /catalog
+Allow: /home
+Allow: /login
+Allow: /register
+
+# Disallow private/authenticated areas
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /my-books
+Disallow: /transactions
+Disallow: /messages
+
+# Disallow API routes (if any)
+Disallow: /api/
+
+# Crawl-delay for polite crawling (optional)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://bookbuddy.app/sitemap.xml
