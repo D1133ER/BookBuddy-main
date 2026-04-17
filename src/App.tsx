@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ChatProvider } from "./contexts/ChatContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import Home from "./components/home";
@@ -22,6 +23,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        <ChatProvider>
         <Suspense
           fallback={
             <main role="main" aria-busy="true" className="flex h-screen w-full items-center justify-center bg-white">
@@ -88,6 +90,7 @@ function App() {
         <Suspense fallback={null}>
           <LazyToaster />
         </Suspense>
+        </ChatProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

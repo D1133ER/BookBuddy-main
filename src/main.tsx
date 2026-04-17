@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
+import "focus-visible/dist/focus-visible.js";
 import { ensureMockDbSeeded } from "@/lib/mockDbSeed";
 
 const basename = import.meta.env.BASE_URL;

@@ -90,3 +90,33 @@ export const getBookById = async (
     owner,
   };
 };
+
+export const toggleWishlistItem = async (userId: string, bookId: string) => {
+  const wishlist = db.wishlist || [];
+  const existingIndex = wishlist.findIndex(item => 
+    item.user_id === userId && item.book_id === bookId
+  );
+  
+  if (existingIndex >= 0) {
+    // Remove from wishlist
+    wishlist.splice(existingIndex, 1);
+  } else {
+    // Add to wishlist
+    wishlist.push({
+      id: db.generateId(),
+      user_id: userId,
+      book_id: bookId,
+      added_at: new Date().toISOString()
+    });
+  }
+  
+  db.wishlist = wishlist;
+  return wishlist;
+};
+
+export const getUserWishlist = async (userId: string) => {
+  const wishlistItems = (db.wishlist || []).filter(item => item.user_id === userId);
+  const bookIds = wishlistItems.map(item => item.book_id);
+  const userWishlistBooks = db.books.filter(book => bookIds.includes(book.id));
+  return userWishlistBooks.map(mapMockBookToAppBook);
+};

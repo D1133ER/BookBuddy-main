@@ -1,0 +1,204 @@
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { chatService, ChatMessage, ChatConversation } from "@/services/chatService";
+import { useAuth } from "@/contexts/AuthContext";
+import { MOCK_DB_CHANGE_EVENT } from "@/lib/mockDb";
+
+interface ChatContextType {
+  conversations: ChatConversation[];
+  activeConversation: ChatConversation | null;
+  isLoading: boolean;
+  error: string | null;
+  isConnected: boolean;
+  typingUsers: Map<string, boolean>;
+  onlineUsers: Set<string>;
+  setActiveConversation: (conversation: ChatConversation | null) => void;
+  sendMessage: (recipientId: string, content: string) => Promise<void>;
+  sendTyping: (recipientId: string, isTyping: boolean) => void;
+  markAsRead: (conversationId: string) => void;
+  refreshConversations: () => void;
+}
+
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
+export const ChatProvider = ({ children }: { children: ReactNode }) => {
+  const { user, isLoggedIn } = useAuth();
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Map<string, boolean>>(new Map());
+  const [isConnected, setIsConnected] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+
+  // Load conversations
+  const loadConversations = useCallback(() => {
+    if (!isLoggedIn) {
+      setConversations([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const convs = chatService.getConversations();
+      setConversations(convs);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load conversations");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoggedIn]);
+
+  // Initialize chat connection
+  useEffect(() => {
+    if (!user?.id) {
+      chatService.disconnect();
+      setIsConnected(false);
+      setConversations([]);
+      return;
+    }
+
+    // Connect to chat
+    chatService.connect(user.id);
+    setIsConnected(chatService.getConnectionStatus());
+
+    // Load initial conversations
+    loadConversations();
+
+    // Subscribe to chat events
+    const unsubscribe = chatService.subscribe((event) => {
+      switch (event.type) {
+        case "message": {
+          const message = event.payload as ChatMessage;
+          // Reload conversations when new message arrives
+          loadConversations();
+          // Also update active conversation if it matches
+          setActiveConversation((prev) => {
+            if (prev && (prev.id === message.senderId || prev.id === message.recipientId)) {
+              return chatService.getConversation(prev.id);
+            }
+            return prev;
+          });
+          break;
+        }
+
+        case "typing": {
+          const { userId, isTyping } = event.payload as { userId: string; isTyping: boolean };
+          if (userId !== user.id) {
+            setTypingUsers((prev) => {
+              const next = new Map(prev);
+              if (isTyping) {
+                next.set(userId, true);
+              } else {
+                next.delete(userId);
+              }
+              return next;
+            });
+
+            // Clear typing indicator after 3 seconds
+            if (isTyping) {
+              setTimeout(() => {
+                setTypingUsers((prev) => {
+                  const next = new Map(prev);
+                  next.delete(userId);
+                  return next;
+                });
+              }, 3000);
+            }
+          }
+          break;
+        }
+
+        case "read":
+        case "userStatus":
+        case "usersOnline": {
+          if (event.type === "usersOnline" && Array.isArray(event.payload)) {
+            setOnlineUsers(new Set(event.payload as unknown as string[]));
+          }
+          loadConversations();
+          break;
+        }
+
+        case "connected":
+        case "disconnected": {
+          setIsConnected(chatService.getConnectionStatus());
+          break;
+        }
+      }
+    });
+
+    // Listen for DB changes
+    const handleDbChange = () => {
+      loadConversations();
+    };
+    window.addEventListener(MOCK_DB_CHANGE_EVENT, handleDbChange);
+
+    return () => {
+      unsubscribe();
+      chatService.disconnect();
+      window.removeEventListener(MOCK_DB_CHANGE_EVENT, handleDbChange);
+    };
+  }, [user?.id, isLoggedIn, loadConversations]);
+
+  // Update active conversation when it changes
+  useEffect(() => {
+    if (activeConversation) {
+      const updated = chatService.getConversation(activeConversation.id);
+      setActiveConversation(updated);
+    }
+  }, [conversations]);
+
+  const handleSendMessage = useCallback(
+    async (recipientId: string, content: string) => {
+      try {
+        await chatService.sendMessage(recipientId, content);
+        loadConversations();
+      } catch (err) {
+        throw err;
+      }
+    },
+    [loadConversations]
+  );
+
+  const handleSendTyping = useCallback((recipientId: string, isTyping: boolean) => {
+    chatService.sendTypingIndicator(recipientId, isTyping);
+  }, []);
+
+  const handleMarkAsRead = useCallback((conversationId: string) => {
+    chatService.markAsRead(conversationId);
+    loadConversations();
+  }, [loadConversations]);
+
+  const refreshConversations = useCallback(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const handleSetActiveConversation = useCallback((conversation: ChatConversation | null) => {
+    setActiveConversation(conversation);
+  }, []);
+
+  const value: ChatContextType = {
+    conversations,
+    activeConversation,
+    isLoading,
+    error,
+    isConnected,
+    typingUsers,
+    onlineUsers,
+    setActiveConversation: handleSetActiveConversation,
+    sendMessage: handleSendMessage,
+    sendTyping: handleSendTyping,
+    markAsRead: handleMarkAsRead,
+    refreshConversations,
+  };
+
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
+};
+
+export const useChat = (): ChatContextType => {
+  const context = useContext(ChatContext);
+  if (context === undefined) {
+    throw new Error("useChat must be used within a ChatProvider");
+  }
+  return context;
+};

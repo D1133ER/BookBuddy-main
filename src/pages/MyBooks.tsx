@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, BookOpen, BookX, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getUserBooks,
   addBook,
@@ -30,6 +31,7 @@ import { createFadeUpItem, createStaggerContainer } from "@/lib/motion";
 import { DEFAULT_BOOK_COVER, mapMockBookToAppBook } from "@/lib/mockDbSeed";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTransactions, updateTransactionStatus } from "@/services/transactionService";
+import { bookSchema } from "@/lib/validations";
 
 type BorrowedBookView = BorrowedBook & {
   transactionId: string;
@@ -51,16 +53,34 @@ const AddBookForm = ({
   const [author, setAuthor] = useState("");
   const [condition, setCondition] = useState("4");
   const [coverImage, setCoverImage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldErrors({});
 
-    // Create a new book object
-    const newBook: Omit<Book, "id"> = {
+    const result = bookSchema.safeParse({
       title,
       author,
       condition: parseInt(condition),
-      coverImage: coverImage || DEFAULT_BOOK_COVER,
+      coverImage: coverImage || undefined,
+    });
+
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        errors[field] = err.message;
+      });
+      setFieldErrors(errors);
+      return;
+    }
+
+    const newBook: Omit<Book, "id"> = {
+      title: result.data.title,
+      author: result.data.author,
+      condition: result.data.condition,
+      coverImage: result.data.coverImage || DEFAULT_BOOK_COVER,
       available: true,
     };
 
@@ -79,8 +99,9 @@ const AddBookForm = ({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter book title"
-          required
+          aria-invalid={!!fieldErrors.title}
         />
+        {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
       </div>
 
       <div className="space-y-2">
@@ -90,8 +111,9 @@ const AddBookForm = ({
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
           placeholder="Enter author name"
-          required
+          aria-invalid={!!fieldErrors.author}
         />
+        {fieldErrors.author && <p className="text-xs text-destructive">{fieldErrors.author}</p>}
       </div>
 
       <div className="space-y-2">
@@ -348,11 +370,18 @@ const MyBooks = () => {
 
             <TabsContent value="my-books">
               {isLoading ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-                  <Loader2 className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Loading your books...
-                  </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl border bg-white p-0 overflow-hidden">
+                      <Skeleton className="h-[180px] w-full" />
+                      <div className="p-4 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-9 w-full mt-2" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : userBooks.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-lg shadow-sm">
@@ -391,7 +420,20 @@ const MyBooks = () => {
             </TabsContent>
 
             <TabsContent value="borrowed">
-              {borrowedBooks.length === 0 ? (
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl border bg-white overflow-hidden">
+                      <Skeleton className="h-[180px] w-full" />
+                      <div className="p-4 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-9 w-full mt-2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : borrowedBooks.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                   <BookX className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium mb-2">

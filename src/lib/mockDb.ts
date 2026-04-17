@@ -63,12 +63,20 @@ export interface Message {
   created_at?: string;
 }
 
+export interface WishlistItem {
+  id: string;
+  user_id: string;
+  book_id: string;
+  added_at: string;
+}
+
 export type MockDbCollectionKey =
   | "users"
   | "books"
   | "transactions"
   | "reviews"
   | "messages"
+  | "wishlist"
   | "session";
 
 export const MOCK_DB_CHANGE_EVENT = "bookbuddy:db-change";
@@ -140,6 +148,9 @@ class MockDB {
     else localStorage.removeItem('session');
     this.emitChange('session');
   }
+
+  public get wishlist() { return this.get<WishlistItem>('wishlist'); }
+  public set wishlist(data: WishlistItem[]) { this.set('wishlist', data); }
 
   generateId() {
     return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;

@@ -1,4 +1,4 @@
-
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Users } from "lucide-react";
 
@@ -49,7 +49,7 @@ const ActivityChart = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] flex items-end justify-between gap-2 pt-4 px-2">
+        <div className="h-[300px] flex items-end justify-between gap-2 pt-4 px-2" role="img" aria-label={`Monthly activity chart: ${chartData.map((d) => `${d.month} ${d.value} exchanges`).join(", ")}`}>
           {chartData.map((item, index) => {
             const isHighest =
               item.value === Math.max(...chartData.map((d) => d.value));
@@ -112,4 +112,4 @@ const ActivityChart = ({
   );
 };
 
-export default ActivityChart;
+export default memo(ActivityChart);

@@ -1,4 +1,4 @@
-
+import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
@@ -100,4 +100,4 @@ const StatCard = ({
   );
 };
 
-export default StatCard;
+export default memo(StatCard);

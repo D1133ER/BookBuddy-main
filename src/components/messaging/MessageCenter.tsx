@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send, Wifi, WifiOff } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { createFadeUpItem, createHoverLift, createPageVariants, createStaggerContainer, pressScale } from "@/lib/motion";
+import { useChat } from "@/contexts/ChatContext";
 
 interface Message {
   id: string;
@@ -45,11 +46,28 @@ const MessageCenter = ({
   const [selectedConversation, setSelectedConversation] = useState<string | null>(initialConversationId);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { typingUsers, isConnected, sendTyping, onlineUsers } = useChat();
 
   const currentConversation = conversations.find((conv) => conv.id === selectedConversation);
   const listVariants = createStaggerContainer(shouldReduceMotion, 0.07, 0.02);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 14);
   const threadVariants = createPageVariants(shouldReduceMotion);
+
+  // Check if other user is typing
+  const otherUserTyping = selectedConversation ? typingUsers.get(selectedConversation) : false;
+  // Check if other user is online
+  const otherUserOnline = selectedConversation ? onlineUsers.has(selectedConversation) : false;
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [currentConversation?.messages]);
 
   useEffect(() => {
     if (initialConversationId && conversations.some((conversation) => conversation.id === initialConversationId)) {
@@ -69,6 +87,7 @@ const MessageCenter = ({
     if (!newMessage.trim() || !selectedConversation || !onSendMessage) return;
 
     setIsSending(true);
+    setIsTyping(false);
 
     try {
       await onSendMessage(selectedConversation, newMessage.trim());
@@ -77,6 +96,41 @@ const MessageCenter = ({
       setIsSending(false);
     }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+
+    // Send typing indicator
+    if (!isTyping && selectedConversation) {
+      setIsTyping(true);
+      sendTyping(selectedConversation, true);
+    }
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to stop typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      if (selectedConversation) {
+        sendTyping(selectedConversation, false);
+      }
+    }, 2000);
+  };
+
+  // Clean up typing on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (selectedConversation && isTyping) {
+        sendTyping(selectedConversation, false);
+      }
+    };
+  }, [selectedConversation, isTyping, sendTyping]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -116,11 +170,18 @@ const MessageCenter = ({
     <div className="flex flex-col md:flex-row h-[600px] border rounded-lg overflow-hidden">
       {/* Conversation List */}
       <div className="md:w-1/3 border-r">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex items-center justify-between">
           <h2 className="font-semibold flex items-center">
             <MessageSquare className="h-4 w-4 mr-2" />
             Messages
           </h2>
+          <div className="flex items-center" aria-label={isConnected ? "Connected" : "Reconnecting..."} title={isConnected ? "Connected" : "Reconnecting..."}>
+            {isConnected ? (
+              <Wifi className="h-4 w-4 text-green-500" />
+            ) : (
+              <WifiOff className="h-4 w-4 text-muted-foreground animate-pulse" />
+            )}
+          </div>
         </div>
         <motion.div
           initial="hidden"
@@ -146,6 +207,9 @@ const MessageCenter = ({
                   </Avatar>
                   {!conversation.lastMessage.isRead && (
                     <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary"></span>
+                  )}
+                  {onlineUsers.has(conversation.id) && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Online"></span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -180,14 +244,22 @@ const MessageCenter = ({
             className="flex-1 flex flex-col"
           >
             <div className="p-4 border-b flex items-center space-x-3">
-              <Avatar>
-                <AvatarImage src={currentConversation.user.avatar || undefined} alt={currentConversation.user.name} />
-                <AvatarFallback>
-                  {currentConversation.user.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar>
+                  <AvatarImage src={currentConversation.user.avatar || undefined} alt={currentConversation.user.name} />
+                  <AvatarFallback>
+                    {currentConversation.user.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {otherUserOnline && (
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-white" title="Online"></span>
+                )}
+              </div>
               <div>
                 <p className="font-medium">{currentConversation.user.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {otherUserOnline ? "Online" : "Offline"}
+                </p>
               </div>
             </div>
 
@@ -223,9 +295,9 @@ const MessageCenter = ({
             <div className="p-4 border-t">
               <form onSubmit={handleSendMessage} className="flex space-x-2">
                 <Input
-                  placeholder="Type a message..."
+                  placeholder={otherUserTyping ? "对方正在输入..." : "Type a message..."}
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={handleInputChange}
                   className="flex-1"
                 />
                 <motion.div whileHover={createHoverLift(shouldReduceMotion, -2)} whileTap={pressScale}>
@@ -234,6 +306,11 @@ const MessageCenter = ({
                   </Button>
                 </motion.div>
               </form>
+              {otherUserTyping && (
+                <p className="text-xs text-muted-foreground mt-1 animate-pulse">
+                  {currentConversation?.user.name} is typing...
+                </p>
+              )}
             </div>
           </motion.div>
         ) : (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 
@@ -71,7 +71,7 @@ const UserDistributionChart = ({
       <CardContent>
         <div className="flex justify-center mb-6">
           <div className="relative w-48 h-48">
-            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md" role="img" aria-label={`${title}: ${chartData.map((d) => `${d.label} ${d.value}`).join(", ")}`}>
               {chartData.reduce((jsx, item, index, array) => {
                 const previousTotal = array
                   .slice(0, index)
@@ -173,4 +173,4 @@ const UserDistributionChart = ({
   );
 };
 
-export default UserDistributionChart;
+export default memo(UserDistributionChart);

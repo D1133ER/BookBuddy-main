@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Search, Filter } from "lucide-react";
-import { useCatalogData } from "@/hooks/useCatalogData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCatalogData, useAdvancedCatalogSearch } from "@/hooks/useCatalogData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -28,12 +29,13 @@ const Catalog = () => {
   const containerVariants = createStaggerContainer(shouldReduceMotion, 0.08, 0.04);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 20);
   const { books, error, isLoading } = useCatalogData();
+  const { filteredBooks, filters, setFilters } = useAdvancedCatalogSearch(books);
   const { isLoggedIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const searchQuery = searchParams.get("search") || "";
-  const availableOnly = searchParams.get("available") === "true";
+
+  // Load selected book from URL
   const selectedBookId = searchParams.get("book");
 
   const updateSearchParams = (updates: Record<string, string | null>) => {
@@ -59,15 +61,6 @@ const Catalog = () => {
       updateSearchParams({ book: null });
     }
   }, [books, selectedBookId]);
-
-  const filteredBooks = books.filter((book) => {
-    const matchesSearch =
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.genre?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesAvailability = availableOnly ? book.available : true;
-    return matchesSearch && matchesAvailability;
-  });
 
   const selectedBook = books.find((book) => book.id === selectedBookId);
   const selectedOwner = selectedBook
@@ -120,27 +113,63 @@ const Catalog = () => {
             </motion.div>
 
             <motion.div variants={itemVariants} className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="relative flex-grow">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
                     placeholder="Search by title, author, or genre..."
                     className="pl-9"
-                    value={searchQuery}
-                    onChange={(e) => updateSearchParams({ search: e.target.value || null })}
+                    value={filters.searchTerm}
+                    onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
                   />
                 </div>
                 <motion.div whileHover={createHoverLift(shouldReduceMotion, -2)} whileTap={pressScale}>
                   <Button
                     variant="outline"
-                    className={availableOnly ? "bg-primary text-white" : ""}
-                    onClick={() => updateSearchParams({ available: availableOnly ? null : "true" })}
+                    className={filters.availability ? "bg-primary text-white" : ""}
+                    onClick={() => setFilters({ ...filters, availability: filters.availability ? null : true })}
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    {availableOnly ? "Showing Available" : "Show Available Only"}
+                    {filters.availability ? "Showing Available" : "Show Available Only"}
                   </Button>
                 </motion.div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-1/3">
+                  <Select 
+                    value={filters.sortBy} 
+                    onValueChange={(val: any) => setFilters({ ...filters, sortBy: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sort By" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="title">Title (A-Z)</SelectItem>
+                      <SelectItem value="author">Author (A-Z)</SelectItem>
+                      <SelectItem value="rating">Highest Rated</SelectItem>
+                      <SelectItem value="dateAdded">Newest First</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="w-full md:w-1/3">
+                  <Select 
+                    value={filters.condition ? filters.condition.toString() : "all"} 
+                    onValueChange={(val) => setFilters({ ...filters, condition: val === "all" ? null : parseInt(val) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Condition" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Condition</SelectItem>
+                      <SelectItem value="4">Like New & Up</SelectItem>
+                      <SelectItem value="3">Good & Up</SelectItem>
+                      <SelectItem value="2">Fair & Up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </motion.div>
 
@@ -156,7 +185,7 @@ const Catalog = () => {
                 <Button
                   variant="link"
                   onClick={() => {
-                    updateSearchParams({ search: null, available: null, book: null });
+                    setFilters({ searchTerm: "", genres: [], availability: null, condition: null, sortBy: "title" });
                   }}
                 >
                   Clear filters

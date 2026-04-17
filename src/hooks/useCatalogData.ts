@@ -71,3 +71,65 @@ export function useCatalogData() {
     refresh,
   };
 }
+
+export interface SearchFilters {
+  searchTerm: string;
+  genres: string[];
+  availability: boolean | null;
+  condition: number | null;
+  sortBy: "title" | "author" | "rating" | "dateAdded";
+}
+
+export const useAdvancedCatalogSearch = (books: CatalogBook[]) => {
+  const [filters, setFilters] = useState<SearchFilters>({
+    searchTerm: "",
+    genres: [],
+    availability: null,
+    condition: null,
+    sortBy: "title"
+  });
+
+  const filteredBooks = useMemo(() => {
+    return books.filter(book => {
+      // Search term filter
+      if (filters.searchTerm && 
+          !book.title.toLowerCase().includes(filters.searchTerm.toLowerCase()) &&
+          !book.author.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+        return false;
+      }
+      
+      // Availability filter
+      if (filters.availability !== null && book.available !== filters.availability) {
+        return false;
+      }
+      
+      // Condition filter
+      if (filters.condition !== null && book.condition < filters.condition) {
+        return false;
+      }
+      
+      // Genre filter
+      if (filters.genres.length > 0 && 
+          (!book.genre || !filters.genres.some(genre => book.genre!.includes(genre)))) {
+        return false;
+      }
+      
+      return true;
+    }).sort((a, b) => {
+      switch (filters.sortBy) {
+        case "title":
+          return a.title.localeCompare(b.title);
+        case "author":
+          return a.author.localeCompare(b.author);
+        case "rating":
+          return (b.rating || 0) - (a.rating || 0);
+        case "dateAdded":
+          return new Date(b.publicationDate || "").getTime() - new Date(a.publicationDate || "").getTime();
+        default:
+          return 0;
+      }
+    });
+  }, [books, filters]);
+
+  return { filteredBooks, filters, setFilters };
+};

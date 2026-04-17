@@ -85,3 +85,11 @@ export const paginationSchema = z.object({
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
+
+// Book Request Schema
+export const bookRequestSchema = z.object({
+  bookId: z.string().min(1, "Book ID is required"),
+  message: z.string().max(500, "Message must be less than 500 characters").optional(),
+});
+
+export type BookRequestInput = z.infer<typeof bookRequestSchema>;

@@ -1,4 +1,5 @@
 
+import { memo, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -34,6 +35,9 @@ const BookCard = ({
   isOwner = false,
   borrowed = false,
 }: BookCardProps) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
   const bookId = id ?? "book-placeholder";
   const bookTitle = title ?? "Community Pick";
   const bookAuthor = author ?? "Unknown Author";
@@ -74,12 +78,22 @@ const BookCard = ({
     <div className="h-full transition-transform duration-300 motion-safe:hover:-translate-y-1">
       <Card className="group w-[250px] min-h-[390px] overflow-hidden flex flex-col bg-white border-transparent shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-2xl">
         <div className="relative h-[180px] overflow-hidden group">
+          {!loaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
+          )}
           <img
-            src={bookCoverImage}
+            src={error ? DEFAULT_BOOK_COVER : bookCoverImage}
             alt={bookTitle}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
             loading="lazy"
             decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={() => {
+              setError(true);
+              setLoaded(true);
+            }}
           />
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <Badge
@@ -136,6 +150,13 @@ const BookCard = ({
             disabled={actionDisabled}
             onClick={() => onRequest(bookId)}
             variant={actionDisabled ? "secondary" : "default"}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onRequest(bookId);
+              }
+            }}
+            aria-describedby={`book-${bookId}-status`}
           >
             <BookOpen className="mr-2 h-4 w-4" />
             {actionLabel}
@@ -146,4 +167,4 @@ const BookCard = ({
   );
 };
 
-export default BookCard;
+export default memo(BookCard);

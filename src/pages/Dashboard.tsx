@@ -8,6 +8,7 @@ import { BookOpen, BookPlus, TrendingUp, Users } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import PopularBooks from "@/components/dashboard/PopularBooks";
+import { Skeleton } from "@/components/ui/skeleton";
 import ActivityChart from "@/components/dashboard/ActivityChart";
 import UserDistributionChart from "@/components/dashboard/UserDistributionChart";
 import WelcomeBanner from "@/components/dashboard/WelcomeBanner";
@@ -18,6 +19,7 @@ import { getConversations } from "@/services/messageService";
 import { getTransactions } from "@/services/transactionService";
 import { getUserStats } from "@/services/userService";
 import { DEFAULT_BOOK_COVER } from "@/lib/mockDbSeed";
+import { useToast } from "@/components/ui/use-toast";
 
 type DashboardRecentTransaction = {
   id: string;
@@ -113,6 +115,7 @@ const Dashboard = () => {
   const { books } = useCatalogData();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot>(emptySnapshot);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const loadDashboard = useCallback(async () => {
     if (!user?.id) {
@@ -243,10 +246,19 @@ const Dashboard = () => {
           },
         ],
       });
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Dashboard load error:", error);
+      }
+      toast({
+        title: "Could not load dashboard",
+        description: "There was a problem loading your dashboard data. Please refresh.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [books, user?.id]);
+  }, [books, user?.id, toast]);
 
   useEffect(() => {
     void loadDashboard();
@@ -277,8 +289,28 @@ const Dashboard = () => {
             className="space-y-8"
           >
             {isLoading && (
-              <motion.div variants={itemVariants} className="rounded-lg border bg-white p-4 text-sm text-muted-foreground">
-                Refreshing your local dashboard metrics...
+              <motion.div variants={itemVariants} className="space-y-6">
+                {/* Stat cards skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-lg border bg-white p-6 space-y-3">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-3 w-40" />
+                    </div>
+                  ))}
+                </div>
+                {/* Chart area skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 rounded-lg border bg-white p-6">
+                    <Skeleton className="h-5 w-40 mb-4" />
+                    <Skeleton className="h-[300px] w-full" />
+                  </div>
+                  <div className="rounded-lg border bg-white p-6">
+                    <Skeleton className="h-5 w-32 mb-4" />
+                    <Skeleton className="h-[300px] w-full" />
+                  </div>
+                </div>
               </motion.div>
             )}
 
