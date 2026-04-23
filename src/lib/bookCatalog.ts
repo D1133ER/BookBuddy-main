@@ -4,6 +4,7 @@ import { createBookCoverDataUri } from "@/lib/bookCovers";
 export interface CatalogBook extends Book {
   ratingsCount?: number;
   source?: string;
+  createdAt?: string;
 }
 
 export interface PopularBookMetric {

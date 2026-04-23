@@ -124,7 +124,7 @@ export const useAdvancedCatalogSearch = (books: CatalogBook[]) => {
         case "rating":
           return (b.rating || 0) - (a.rating || 0);
         case "dateAdded":
-          return new Date(b.publicationDate || "").getTime() - new Date(a.publicationDate || "").getTime();
+          return new Date(b.createdAt || "").getTime() - new Date(a.createdAt || "").getTime();
         default:
           return 0;
       }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -14,14 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCatalogData, useAdvancedCatalogSearch } from "@/hooks/useCatalogData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  createFadeUpItem,
-  createHoverLift,
-  createStaggerContainer,
-  pressScale,
-} from "@/lib/motion";
+import { createFadeUpItem, createHoverLift, createStaggerContainer, pressScale } from "@/lib/motion";
 import { requestBook } from "@/services/transactionService";
+import { getUserWishlist, toggleWishlistItem } from "@/services/bookService";
+import { trackEvent } from "@/lib/analytics";
 import { db } from "@/lib/mockDb";
+import { Grid } from 'react-window';
 
 const Catalog = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,10 +28,38 @@ const Catalog = () => {
   const itemVariants = createFadeUpItem(shouldReduceMotion, 20);
   const { books, error, isLoading } = useCatalogData();
   const { filteredBooks, filters, setFilters } = useAdvancedCatalogSearch(books);
-  const { isLoggedIn } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [wishlistBookIds, setWishlistBookIds] = useState<Set<string>>(new Set());
+
+  const [columns, setColumns] = useState(4);
+  const [containerWidth, setContainerWidth] = useState(1200);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = Math.min(window.innerWidth - 32, 1280); // px-4 padding (32px), max-w-7xl (1280px)
+      setContainerWidth(width);
+      if (width < 640) setColumns(1);
+      else if (width < 768) setColumns(2);
+      else if (width < 1024) setColumns(3);
+      else setColumns(4);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      getUserWishlist(user.id).then(books => {
+        setWishlistBookIds(new Set(books.map(b => b.id)));
+      });
+    } else {
+      setWishlistBookIds(new Set());
+    }
+  }, [user?.id]);
 
   // Load selected book from URL
   const selectedBookId = searchParams.get("book");
@@ -75,6 +101,11 @@ const Catalog = () => {
 
     try {
       await requestBook(id);
+      trackEvent({
+        category: 'Engagement',
+        action: 'Book Requested',
+        label: id
+      });
       toast({
         title: "Request sent",
         description: "The owner has been notified and your request is now listed in Transactions.",
@@ -83,6 +114,28 @@ const Catalog = () => {
       toast({
         title: "Unable to request book",
         description: requestError.message || "Please try again in a moment.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleWishlist = async (id: string) => {
+    if (!isLoggedIn || !user?.id) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
+    try {
+      const newWishlist = await toggleWishlistItem(user.id, id);
+      setWishlistBookIds(new Set(newWishlist.map(item => item.book_id)));
+      trackEvent({
+        category: 'Engagement',
+        action: 'Wishlist Toggled',
+        label: id
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Could not update wishlist.",
         variant: "destructive",
       });
     }
@@ -170,6 +223,28 @@ const Catalog = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="w-full md:w-1/3">
+                  <Select 
+                    value={filters.genres.length > 0 ? filters.genres[0] : "all"} 
+                    onValueChange={(val) => setFilters({ ...filters, genres: val === "all" ? [] : [val] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Genre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Genres</SelectItem>
+                      <SelectItem value="Fiction">Fiction</SelectItem>
+                      <SelectItem value="Non-fiction">Non-fiction</SelectItem>
+                      <SelectItem value="Science Fiction">Science Fiction</SelectItem>
+                      <SelectItem value="History">History</SelectItem>
+                      <SelectItem value="Romance">Romance</SelectItem>
+                      <SelectItem value="Horror">Horror</SelectItem>
+                      <SelectItem value="Memoir">Memoir</SelectItem>
+                      <SelectItem value="Self-help">Self-help</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </motion.div>
 
@@ -194,33 +269,53 @@ const Catalog = () => {
             ) : (
               <motion.div
                 variants={containerVariants}
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                className="w-full flex justify-center"
               >
-                {filteredBooks.map((book) => (
-                  <motion.div key={book.id} variants={itemVariants} className="flex justify-center">
-                    <div className="space-y-3">
-                      <BookCard
-                        id={book.id}
-                        title={book.title}
-                        author={book.author}
-                        coverImage={book.coverImage}
-                        condition={book.condition}
-                        available={book.available}
-                        genre={book.genre}
-                        rating={book.rating}
-                        publicationDate={book.publicationDate}
-                        onRequest={handleRequestBook}
-                      />
-                      <Button
-                        variant="ghost"
-                        className="w-full"
-                        onClick={() => updateSearchParams({ book: book.id })}
-                      >
-                        View Details
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+                <Grid
+                  columnCount={columns}
+                  columnWidth={Math.floor(containerWidth / columns)}
+                  rowCount={Math.ceil(filteredBooks.length / columns)}
+                  rowHeight={460}
+                  style={{ height: Math.min(800, Math.ceil(filteredBooks.length / columns) * 460), width: containerWidth }}
+                  className="scrollbar-hide"
+                  cellProps={{}}
+                  cellComponent={({ columnIndex, rowIndex, style }) => {
+                    const index = rowIndex * columns + columnIndex;
+                    const book = filteredBooks[index];
+                    
+                    if (!book) return null;
+
+                    return (
+                      <div style={{ ...style, padding: '12px' }}>
+                        <motion.div variants={itemVariants} className="flex justify-center h-full">
+                          <div className="space-y-3 w-full max-w-[250px]">
+                            <BookCard
+                              id={book.id}
+                              title={book.title}
+                              author={book.author}
+                              coverImage={book.coverImage}
+                              condition={book.condition}
+                              available={book.available}
+                              genre={book.genre}
+                              rating={book.rating}
+                              publicationDate={book.publicationDate}
+                              onRequest={handleRequestBook}
+                              isWishlisted={wishlistBookIds.has(book.id)}
+                              onToggleWishlist={handleToggleWishlist}
+                            />
+                            <Button
+                              variant="ghost"
+                              className="w-full"
+                              onClick={() => updateSearchParams({ book: book.id })}
+                            >
+                              View Details
+                            </Button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    );
+                  }}
+                />
               </motion.div>
             )}
           </motion.div>

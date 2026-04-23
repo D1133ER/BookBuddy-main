@@ -3,7 +3,7 @@ import { memo, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Star, BookOpen, CalendarDays } from "lucide-react";
+import { Star, BookOpen, CalendarDays, Heart } from "lucide-react";
 import { DEFAULT_BOOK_COVER } from "@/lib/mockDbSeed";
 
 interface BookCardProps {
@@ -19,6 +19,8 @@ interface BookCardProps {
   onRequest?: (id: string) => void;
   isOwner?: boolean;
   borrowed?: boolean;
+  isWishlisted?: boolean;
+  onToggleWishlist?: (id: string) => void;
 }
 
 const BookCard = ({
@@ -34,6 +36,8 @@ const BookCard = ({
   onRequest = () => {},
   isOwner = false,
   borrowed = false,
+  isWishlisted = false,
+  onToggleWishlist,
 }: BookCardProps) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -74,10 +78,29 @@ const BookCard = ({
     );
   };
 
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleWishlist) {
+      onToggleWishlist(bookId);
+    }
+  };
+
   return (
     <div className="h-full transition-transform duration-300 motion-safe:hover:-translate-y-1">
       <Card className="group w-[250px] min-h-[390px] overflow-hidden flex flex-col bg-white border-transparent shadow-sm hover:shadow-xl transition-shadow duration-300 rounded-2xl">
         <div className="relative h-[180px] overflow-hidden group">
+          {onToggleWishlist && (
+            <div className="absolute top-3 left-3 z-10">
+              <button
+                onClick={handleToggleWishlist}
+                className="p-1.5 rounded-full bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 transition-colors shadow-sm"
+                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                <Heart className={`h-4 w-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+              </button>
+            </div>
+          )}
           {!loaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
           )}

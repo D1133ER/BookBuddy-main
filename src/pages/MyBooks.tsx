@@ -18,12 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, BookOpen, BookX, Loader2 } from "lucide-react";
+import { Plus, BookOpen, BookX, Loader2, Heart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getUserBooks,
   addBook,
   toggleBookAvailability,
+  getUserWishlist,
+  toggleWishlistItem,
 } from "@/services/bookService";
 import { Book, BorrowedBook } from "@/types/book";
 import { useToast } from "@/components/ui/use-toast";
@@ -32,6 +34,7 @@ import { DEFAULT_BOOK_COVER, mapMockBookToAppBook } from "@/lib/mockDbSeed";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTransactions, updateTransactionStatus } from "@/services/transactionService";
 import { bookSchema } from "@/lib/validations";
+import { trackEvent } from "@/lib/analytics";
 
 type BorrowedBookView = BorrowedBook & {
   transactionId: string;
@@ -170,6 +173,7 @@ const AddBookForm = ({
 const MyBooks = () => {
   const [userBooks, setUserBooks] = useState<Book[]>([]);
   const [borrowedBooks, setBorrowedBooks] = useState<BorrowedBookView[]>([]);
+  const [wishlistBooks, setWishlistBooks] = useState<Book[]>([]);
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -189,9 +193,10 @@ const MyBooks = () => {
 
     try {
       setIsLoading(true);
-      const [books, borrowerTransactions] = await Promise.all([
+      const [books, borrowerTransactions, wBooks] = await Promise.all([
         getUserBooks(),
         getTransactions({ userId: user.id, type: "borrower" }),
+        getUserWishlist(user.id),
       ]);
 
       const activeBorrowedBooks = borrowerTransactions
@@ -207,6 +212,7 @@ const MyBooks = () => {
 
       setUserBooks(books);
       setBorrowedBooks(activeBorrowedBooks);
+      setWishlistBooks(wBooks);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("Error fetching books:", error);
@@ -247,6 +253,10 @@ const MyBooks = () => {
       setIsSubmitting(true);
       await addBook(newBook);
       await loadShelf();
+      trackEvent({
+        category: 'Content',
+        action: 'Book Added'
+      });
       toast({
         title: "Success",
         description: "Book added to your collection.",
@@ -286,6 +296,29 @@ const MyBooks = () => {
       toast({
         title: "Error",
         description: "Failed to update book availability. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleWishlist = async (id: string) => {
+    if (!user) return;
+    try {
+      await toggleWishlistItem(user.id, id);
+      await loadShelf();
+      trackEvent({
+        category: 'Engagement',
+        action: 'Wishlist Toggled',
+        label: id
+      });
+      toast({
+        title: "Wishlist updated",
+        description: "Book removed from your wishlist.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist. Please try again.",
         variant: "destructive",
       });
     }
@@ -365,6 +398,10 @@ const MyBooks = () => {
               <TabsTrigger value="borrowed" className="flex items-center">
                 <BookX className="mr-2 h-4 w-4" />
                 Borrowed ({borrowedBooks.length})
+              </TabsTrigger>
+              <TabsTrigger value="wishlist" className="flex items-center">
+                <Heart className="mr-2 h-4 w-4" />
+                Wishlist ({wishlistBooks.length})
               </TabsTrigger>
             </TabsList>
 
@@ -482,6 +519,57 @@ const MyBooks = () => {
                           </Button>
                         </div>
                       </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="wishlist">
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl border bg-white overflow-hidden">
+                      <Skeleton className="h-[180px] w-full" />
+                      <div className="p-4 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-9 w-full mt-2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : wishlistBooks.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                  <Heart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">
+                    Your wishlist is empty
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Explore the catalog and save books you're interested in
+                  </p>
+                  <Button onClick={() => navigate("/catalog")}>
+                    Browse Catalog
+                  </Button>
+                </div>
+              ) : (
+                <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {wishlistBooks.map((book) => (
+                    <motion.div key={book.id} variants={itemVariants} className="flex justify-center">
+                      <BookCard
+                        id={book.id}
+                        title={book.title}
+                        author={book.author}
+                        coverImage={book.coverImage}
+                        condition={book.condition}
+                        available={book.available}
+                        genre={book.genre}
+                        rating={book.rating}
+                        publicationDate={book.publicationDate}
+                        onRequest={() => {}}
+                        isWishlisted={true}
+                        onToggleWishlist={handleToggleWishlist}
+                      />
                     </motion.div>
                   ))}
                 </motion.div>

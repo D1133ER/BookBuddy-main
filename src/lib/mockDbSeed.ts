@@ -210,6 +210,7 @@ export const mapMockBookToCatalogBook = (book: MockBook): CatalogBook => ({
   ratingsCount: book.ratings_count,
   publisher: book.publisher,
   source: book.source,
+  createdAt: book.created_at,
 });
 
 export const mapMockBookToAppBook = (book: MockBook): AppBook => ({
