@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import PageTransition from "@/components/layout/PageTransition";
-import TransactionList from "@/components/transactions/TransactionList";
-import TransactionDetail from "@/components/transactions/TransactionDetail";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { createFadeUpItem, createStaggerContainer } from "@/lib/motion";
-import { DEFAULT_BOOK_COVER } from "@/lib/mockDbSeed";
-import { getTransactions, updateTransactionStatus } from "@/services/transactionService";
-
-type TransactionRow = Awaited<ReturnType<typeof getTransactions>>[number];
+import { useState, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import PageTransition from '@/components/layout/PageTransition';
+import TransactionList from '@/components/transactions/TransactionList';
+import TransactionDetail from '@/components/transactions/TransactionDetail';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
+import { DEFAULT_BOOK_COVER } from '@/lib/mockDbSeed';
+import { useUserTransactions, useUpdateTransactionStatusMutation } from '@/hooks/useTransactions';
 
 type TransactionView = {
   id: string;
@@ -30,29 +28,26 @@ type TransactionView = {
     coverImage: string;
     condition: number;
   };
-  type: "borrow" | "lend" | "return";
-  status: "pending" | "active" | "completed" | "cancelled";
+  type: 'borrow' | 'lend' | 'return';
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
   date: string;
   dueDate?: string;
   notes?: string;
 };
 
-const normalizeStatus = (status: string): TransactionView["status"] => {
-  if (["pending", "active", "completed", "cancelled"].includes(status)) {
-    return status as TransactionView["status"];
+const normalizeStatus = (status: string): TransactionView['status'] => {
+  if (['pending', 'active', 'completed', 'cancelled'].includes(status)) {
+    return status as TransactionView['status'];
   }
-
-  return "pending";
+  return 'pending';
 };
 
-const toTransactionView = (transaction: TransactionRow, currentUserId: string): TransactionView | null => {
+const toTransactionView = (transaction: any, currentUserId: string): TransactionView | null => {
   const isBorrower = transaction.borrower_id === currentUserId;
   const otherUser = isBorrower ? transaction.lender : transaction.borrower;
   const book = transaction.book;
 
-  if (!otherUser || !book) {
-    return null;
-  }
+  if (!otherUser || !book) return null;
 
   return {
     id: transaction.id,
@@ -68,7 +63,7 @@ const toTransactionView = (transaction: TransactionRow, currentUserId: string): 
       coverImage: book.cover_image || DEFAULT_BOOK_COVER,
       condition: book.condition,
     },
-    type: isBorrower ? "borrow" : "lend",
+    type: transaction.status === 'completed' ? 'return' : isBorrower ? 'borrow' : 'lend',
     status: normalizeStatus(transaction.status),
     date: transaction.request_date || transaction.created_at || new Date().toISOString(),
     dueDate: transaction.due_date,
@@ -78,98 +73,63 @@ const toTransactionView = (transaction: TransactionRow, currentUserId: string): 
 
 const Transactions = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const containerVariants = createStaggerContainer(shouldReduceMotion, 0.08, 0.04);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 18);
-  const [activeTab, setActiveTab] = useState("all");
-  const [transactions, setTransactions] = useState<TransactionView[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+
+  const { data: rows = [], isLoading } = useUserTransactions(user?.id || '');
+  const updateStatusMutation = useUpdateTransactionStatusMutation();
+
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const loadTransactions = useCallback(async () => {
-    if (!user?.id) {
-      setTransactions([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const rows = await getTransactions({ userId: user.id, type: "all" });
-      const mappedTransactions = rows
-        .map((transaction) => toTransactionView(transaction, user.id))
-        .filter((transaction): transaction is TransactionView => Boolean(transaction));
-
-      setTransactions(mappedTransactions);
-    } catch (loadError: any) {
-      toast({
-        title: "Unable to load transactions",
-        description: loadError.message || "Please try again in a moment.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, user?.id]);
-
-  useEffect(() => {
-    void loadTransactions();
-  }, [loadTransactions]);
+  const transactions = useMemo(() => {
+    if (!user?.id) return [];
+    return rows
+      .map((transaction: any) => toTransactionView(transaction, user.id))
+      .filter((transaction): transaction is TransactionView => Boolean(transaction));
+  }, [rows, user?.id]);
 
   const handleApprove = async (id: string) => {
     try {
-      await updateTransactionStatus(id, "active");
-      toast({
-        title: "Transaction approved",
-        description: "The borrower has been notified and the loan is now active.",
+      await updateStatusMutation.mutateAsync({ id, status: 'active' });
+      toast.success('Transaction approved', {
+        description: 'The borrower has been notified and the loan is now active.',
       });
       setIsDetailOpen(false);
-      await loadTransactions();
     } catch (error: any) {
-      toast({
-        title: "Unable to approve request",
-        description: error.message || "Please try again.",
-        variant: "destructive",
+      toast.error('Unable to approve request', {
+        description: error.message || 'Please try again.',
       });
     }
   };
 
   const handleDecline = async (id: string) => {
     try {
-      await updateTransactionStatus(id, "cancelled");
-      toast({
-        title: "Transaction declined",
-        description: "The requester has been notified.",
+      await updateStatusMutation.mutateAsync({ id, status: 'cancelled' });
+      toast.success('Transaction declined', {
+        description: 'The requester has been notified.',
       });
       setIsDetailOpen(false);
-      await loadTransactions();
     } catch (error: any) {
-      toast({
-        title: "Unable to decline request",
-        description: error.message || "Please try again.",
-        variant: "destructive",
+      toast.error('Unable to decline request', {
+        description: error.message || 'Please try again.',
       });
     }
   };
 
   const handleComplete = async (id: string) => {
     try {
-      await updateTransactionStatus(id, "completed");
-      toast({
-        title: "Transaction completed",
-        description: "The return has been recorded and the book is available again.",
+      await updateStatusMutation.mutateAsync({ id, status: 'completed' });
+      toast.success('Transaction completed', {
+        description: 'The return has been recorded and the book is available again.',
       });
       setIsDetailOpen(false);
-      await loadTransactions();
     } catch (error: any) {
-      toast({
-        title: "Unable to complete transaction",
-        description: error.message || "Please try again.",
-        variant: "destructive",
+      toast.error('Unable to complete transaction', {
+        description: error.message || 'Please try again.',
       });
     }
   };
@@ -179,25 +139,23 @@ const Transactions = () => {
   };
 
   const handleViewDetails = (id: string) => {
-    setSelectedTransaction(id);
+    setSelectedTransactionId(id);
     setIsDetailOpen(true);
   };
 
-  const getFilteredTransactions = () => {
-    if (activeTab === "incoming") {
-      return transactions.filter((transaction) => transaction.type === "lend");
+  const filteredTransactions = useMemo(() => {
+    if (activeTab === 'incoming') {
+      return transactions.filter((t) => t.type === 'lend');
     }
-
-    if (activeTab === "outgoing") {
-      return transactions.filter((transaction) => transaction.type === "borrow");
+    if (activeTab === 'outgoing') {
+      return transactions.filter((t) => t.type === 'borrow');
     }
-
     return transactions;
-  };
+  }, [transactions, activeTab]);
 
-  const getSelectedTransaction = () => {
-    return transactions.find((transaction) => transaction.id === selectedTransaction);
-  };
+  const selectedTransaction = useMemo(() => {
+    return transactions.find((t) => t.id === selectedTransactionId);
+  }, [transactions, selectedTransactionId]);
 
   return (
     <PageTransition className="min-h-screen flex flex-col bg-gray-50">
@@ -233,12 +191,12 @@ const Transactions = () => {
 
                   <TabsContent value={activeTab}>
                     <TransactionList
-                      transactions={getFilteredTransactions()}
+                      transactions={filteredTransactions}
                       onViewDetails={handleViewDetails}
                       onApprove={handleApprove}
                       onDecline={handleDecline}
                       onMessage={handleMessage}
-                      type={activeTab as "incoming" | "outgoing" | "all"}
+                      type={activeTab as 'incoming' | 'outgoing' | 'all'}
                     />
                   </TabsContent>
                 </Tabs>
@@ -250,9 +208,9 @@ const Transactions = () => {
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-3xl">
-          {getSelectedTransaction() && (
+          {selectedTransaction && (
             <TransactionDetail
-              transaction={getSelectedTransaction()!}
+              transaction={selectedTransaction}
               onApprove={handleApprove}
               onDecline={handleDecline}
               onComplete={handleComplete}

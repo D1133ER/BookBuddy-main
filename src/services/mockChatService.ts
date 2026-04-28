@@ -3,9 +3,9 @@
  * Enables real-time messaging with the server
  */
 
-import { io, Socket } from "socket.io-client";
-import { db } from "@/lib/mockDb";
-import { MOCK_DB_CHANGE_EVENT } from "@/lib/mockDb";
+import { io, Socket } from 'socket.io-client';
+import { db } from '@/lib/mockDb';
+import { MOCK_DB_CHANGE_EVENT } from '@/lib/mockDb';
 
 export interface ChatMessage {
   id: string;
@@ -32,7 +32,14 @@ export interface ChatConversation {
   unreadCount: number;
 }
 
-export type ChatEventType = "message" | "typing" | "read" | "connected" | "disconnected" | "userStatus" | "usersOnline";
+export type ChatEventType =
+  | 'message'
+  | 'typing'
+  | 'read'
+  | 'connected'
+  | 'disconnected'
+  | 'userStatus'
+  | 'usersOnline';
 
 interface ChatEvent {
   type: ChatEventType;
@@ -63,7 +70,7 @@ class ChatService {
   }
 
   private initSocket() {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
     try {
       this.socket = io(socketUrl, {
@@ -71,113 +78,117 @@ class ChatService {
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
         reconnectionDelay: this.reconnectDelay,
-        transports: ["websocket", "polling"],
+        transports: ['websocket', 'polling'],
       });
 
       this.setupEventListeners();
     } catch (error) {
-      console.error("[ChatService] Failed to initialize socket:", error);
+      console.error('[ChatService] Failed to initialize socket:', error);
     }
   }
 
   private setupEventListeners() {
     if (!this.socket) return;
 
-    this.socket.on("connect", () => {
-      console.log("[ChatService] Connected to server");
+    this.socket.on('connect', () => {
+      console.log('[ChatService] Connected to server');
       this.isConnected = true;
       this.reconnectAttempts = 0;
 
       // Rejoin if we have a user ID
       if (this.userId) {
-        this.socket?.emit("user:join", this.userId);
+        this.socket?.emit('user:join', this.userId);
       }
 
       // Flush queued messages
       this.flushMessageQueue();
 
       if (this.socket) {
-        this.emitEvent("connected", { socketId: this.socket.id });
+        this.emitEvent('connected', { socketId: this.socket.id });
       }
     });
 
-    this.socket.on("disconnect", (reason) => {
-      console.log("[ChatService] Disconnected:", reason);
+    this.socket.on('disconnect', (reason) => {
+      console.log('[ChatService] Disconnected:', reason);
       this.isConnected = false;
-      this.emitEvent("disconnected", { reason });
+      this.emitEvent('disconnected', { reason });
     });
 
-    this.socket.on("connect_error", (error) => {
-      console.error("[ChatService] Connection error:", error);
+    this.socket.on('connect_error', (error) => {
+      console.error('[ChatService] Connection error:', error);
       this.reconnectAttempts++;
     });
 
     // Handle incoming private messages
-    this.socket.on("message:new", (message: ChatMessage) => {
-      console.log("[ChatService] New message received:", message);
+    this.socket.on('message:new', async (message: ChatMessage) => {
+      console.log('[ChatService] New message received:', message);
 
       // Save to local DB for persistence
-      this.saveMessageToLocal(message);
+      await this.saveMessageToLocal(message);
 
       // Emit to handlers
-      this.emitEvent("message", message);
+      this.emitEvent('message', message);
 
       // Dispatch change event
       window.dispatchEvent(
         new CustomEvent(MOCK_DB_CHANGE_EVENT, {
-          detail: { key: "messages", message },
-        })
+          detail: { key: 'messages', message },
+        }),
       );
     });
 
     // Handle message sent confirmation
-    this.socket.on("message:sent", (message: ChatMessage) => {
-      console.log("[ChatService] Message sent confirmation:", message);
-      this.saveMessageToLocal(message);
+    this.socket.on('message:sent', async (message: ChatMessage) => {
+      console.log('[ChatService] Message sent confirmation:', message);
+      await this.saveMessageToLocal(message);
       // Dispatch change event to refresh UI
       window.dispatchEvent(
         new CustomEvent(MOCK_DB_CHANGE_EVENT, {
-          detail: { key: "messages", message },
-        })
+          detail: { key: 'messages', message },
+        }),
       );
     });
 
     // Handle typing indicators
-    this.socket.on("typing:update", ({ userId, isTyping }: TypingPayload) => {
-      console.log("[ChatService] Typing update:", userId, isTyping);
-      this.emitEvent("typing", { userId, isTyping });
+    this.socket.on('typing:update', ({ userId, isTyping }: TypingPayload) => {
+      console.log('[ChatService] Typing update:', userId, isTyping);
+      this.emitEvent('typing', { userId, isTyping });
     });
 
     // Handle read receipts
-    this.socket.on("message:read", ({ conversationId, readBy }: { conversationId: string; readBy: string }) => {
-      console.log("[ChatService] Messages read:", conversationId, readBy);
-      this.emitEvent("read", { conversationId, readBy });
+    this.socket.on(
+      'message:read',
+      ({ conversationId, readBy }: { conversationId: string; readBy: string }) => {
+        console.log('[ChatService] Messages read:', conversationId, readBy);
+        this.emitEvent('read', { conversationId, readBy });
 
-      window.dispatchEvent(
-        new CustomEvent(MOCK_DB_CHANGE_EVENT, {
-          detail: { key: "messages", readBy },
-        })
-      );
-    });
+        window.dispatchEvent(
+          new CustomEvent(MOCK_DB_CHANGE_EVENT, {
+            detail: { key: 'messages', readBy },
+          }),
+        );
+      },
+    );
 
     // Handle user status updates
-    this.socket.on("user:status", ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
-      console.log("[ChatService] User status:", userId, isOnline);
-      this.emitEvent("userStatus", { userId, isOnline });
+    this.socket.on('user:status', ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
+      console.log('[ChatService] User status:', userId, isOnline);
+      this.emitEvent('userStatus', { userId, isOnline });
     });
 
     // Handle online users list
-    this.socket.on("users:online", (userIds: string[]) => {
-      console.log("[ChatService] Online users:", userIds);
-      this.emitEvent("usersOnline", userIds);
+    this.socket.on('users:online', (userIds: string[]) => {
+      console.log('[ChatService] Online users:', userIds);
+      this.emitEvent('usersOnline', userIds);
     });
   }
 
-  private saveMessageToLocal(message: ChatMessage) {
+  private async saveMessageToLocal(message: ChatMessage) {
     // Check if message already exists
-    const exists = db.messages.some((m) => m.id === message.id);
+    const messages = await db.getMessages();
+    const exists = messages.some((m) => m.id === message.id);
     if (!exists) {
-      const messageRecord: typeof db.messages[0] = {
+      const messageRecord: Awaited<ReturnType<typeof db.getMessages>>[0] = {
         id: message.id,
         sender_id: message.senderId,
         recipient_id: message.recipientId,
@@ -185,7 +196,7 @@ class ChatService {
         is_read: message.isRead,
         created_at: message.timestamp,
       };
-      db.messages = [...db.messages, messageRecord];
+      await db.setMessages([...messages, messageRecord]);
     }
   }
 
@@ -202,7 +213,7 @@ class ChatService {
     const messageId = db.generateId();
     const timestamp = new Date().toISOString();
 
-    this.socket.emit("message:private", {
+    this.socket.emit('message:private', {
       recipientId,
       senderId: this.userId,
       content,
@@ -222,7 +233,7 @@ class ChatService {
       try {
         handler(event);
       } catch (e) {
-        console.error("[ChatService] Handler error:", e);
+        console.error('[ChatService] Handler error:', e);
       }
     });
   }
@@ -238,15 +249,15 @@ class ChatService {
       this.socket.connect();
 
       // Join with user ID after connection
-      this.socket.once("connect", () => {
-        this.socket?.emit("user:join", userId);
+      this.socket.once('connect', () => {
+        this.socket?.emit('user:join', userId);
       });
     }
   }
 
   disconnect() {
     if (this.userId && this.socket) {
-      this.socket.emit("user:leave", this.userId);
+      this.socket.emit('user:leave', this.userId);
     }
 
     this.userId = null;
@@ -273,7 +284,7 @@ class ChatService {
 
   async sendMessage(recipientId: string, content: string): Promise<ChatMessage> {
     if (!this.userId) {
-      throw new Error("User not authenticated");
+      throw new Error('User not authenticated');
     }
 
     const messageId = db.generateId();
@@ -292,7 +303,7 @@ class ChatService {
       this.sendMessageToServer(recipientId, content);
     } else {
       this.messageQueue.push({ recipientId, content });
-      this.saveMessageToLocal(message);
+      await this.saveMessageToLocal(message);
     }
 
     return message;
@@ -301,7 +312,7 @@ class ChatService {
   sendTypingIndicator(recipientId: string, isTyping: boolean) {
     if (!this.socket || !this.userId || !this.isConnected) return;
 
-    this.socket.emit(isTyping ? "typing:start" : "typing:stop", {
+    this.socket.emit(isTyping ? 'typing:start' : 'typing:stop', {
       senderId: this.userId,
       recipientId,
     });
@@ -310,7 +321,7 @@ class ChatService {
   markAsRead(conversationId: string) {
     if (!this.socket || !this.userId || !this.isConnected) return;
 
-    this.socket.emit("message:read", {
+    this.socket.emit('message:read', {
       conversationId,
       readerId: this.userId,
       readBy: this.userId,
@@ -318,37 +329,37 @@ class ChatService {
   }
 
   async getMessageHistory(otherUserId: string): Promise<ChatMessage[]> {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       if (!this.socket || !this.userId) {
-        resolve(this.getLocalMessages(otherUserId));
+        resolve(await this.getLocalMessages(otherUserId));
         return;
       }
 
       this.socket.emit(
-        "message:history",
+        'message:history',
         { userId: this.userId, otherUserId },
         (history: ChatMessage[]) => {
-          console.log("[ChatService] Got history from server:", history.length, "messages");
+          console.log('[ChatService] Got history from server:', history.length, 'messages');
           resolve(history);
-        }
+        },
       );
 
-      setTimeout(() => {
-        resolve(this.getLocalMessages(otherUserId));
+      setTimeout(async () => {
+        resolve(await this.getLocalMessages(otherUserId));
       }, 2000);
     });
   }
 
-  private getLocalMessages(otherUserId: string): ChatMessage[] {
-    const session = db.session;
+  private async getLocalMessages(otherUserId: string): Promise<ChatMessage[]> {
+    const session = await db.getSession();
     const user = session?.user;
     if (!user) return [];
 
-    const messages = db.messages
+    const messages = (await db.getMessages())
       .filter(
         (m) =>
           (m.sender_id === user.id && m.recipient_id === otherUserId) ||
-          (m.sender_id === otherUserId && m.recipient_id === user.id)
+          (m.sender_id === otherUserId && m.recipient_id === user.id),
       )
       .sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -361,17 +372,17 @@ class ChatService {
       senderId: m.sender_id,
       recipientId: m.recipient_id,
       content: m.content,
-      timestamp: m.created_at || "",
+      timestamp: m.created_at || '',
       isRead: m.is_read,
     }));
   }
 
-  getConversations(): ChatConversation[] {
-    const session = db.session;
+  async getConversations(): Promise<ChatConversation[]> {
+    const session = await db.getSession();
     const user = session?.user;
     if (!user) return [];
 
-    const messages = db.messages
+    const messages = (await db.getMessages())
       .filter((m) => m.sender_id === user.id || m.recipient_id === user.id)
       .sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -380,12 +391,13 @@ class ChatService {
       });
 
     const conversations = new Map();
+    const users = await db.getUsers();
 
     messages.forEach((message) => {
       const isCurrentUserSender = message.sender_id === user.id;
       const otherUserId = isCurrentUserSender ? message.recipient_id : message.sender_id;
 
-      const otherUser = db.users.find((u) => u.id === otherUserId);
+      const otherUser = users.find((u) => u.id === otherUserId);
       if (!otherUser) return;
 
       if (!conversations.has(otherUserId)) {
@@ -398,7 +410,7 @@ class ChatService {
           },
           lastMessage: {
             text: message.content,
-            timestamp: message.created_at || "",
+            timestamp: message.created_at || '',
             isRead: message.is_read || isCurrentUserSender,
           },
           messages: [],
@@ -417,7 +429,7 @@ class ChatService {
         senderId: message.sender_id,
         recipientId: message.recipient_id,
         content: message.content,
-        timestamp: message.created_at || "",
+        timestamp: message.created_at || '',
         isRead: message.is_read || isCurrentUserSender,
       });
     });
@@ -425,23 +437,24 @@ class ChatService {
     for (const conversation of conversations.values()) {
       conversation.messages.sort(
         (a: ChatMessage, b: ChatMessage) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
     }
 
     return Array.from(conversations.values());
   }
 
-  getConversation(otherUserId: string): ChatConversation | null {
-    const session = db.session;
+  async getConversation(otherUserId: string): Promise<ChatConversation | null> {
+    const session = await db.getSession();
     const user = session?.user;
     if (!user) return null;
 
-    const messages = db.messages
+    const allMessages = await db.getMessages();
+    const messages = allMessages
       .filter(
         (m) =>
           (m.sender_id === user.id && m.recipient_id === otherUserId) ||
-          (m.sender_id === otherUserId && m.recipient_id === user.id)
+          (m.sender_id === otherUserId && m.recipient_id === user.id),
       )
       .sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -449,11 +462,12 @@ class ChatService {
         return dateA - dateB;
       });
 
-    const otherUser = db.users.find((u) => u.id === otherUserId);
+    const users = await db.getUsers();
+    const otherUser = users.find((u) => u.id === otherUserId);
     if (!otherUser) return null;
 
     let updated = false;
-    db.messages.forEach((m) => {
+    allMessages.forEach((m) => {
       if (m.recipient_id === user.id && m.sender_id === otherUserId && !m.is_read) {
         m.is_read = true;
         updated = true;
@@ -461,7 +475,7 @@ class ChatService {
     });
 
     if (updated) {
-      db.messages = [...db.messages];
+      await db.setMessages([...allMessages]);
     }
 
     const formattedMessages: ChatMessage[] = messages.map((m) => ({
@@ -469,7 +483,7 @@ class ChatService {
       senderId: m.sender_id,
       recipientId: m.recipient_id,
       content: m.content,
-      timestamp: m.created_at || "",
+      timestamp: m.created_at || '',
       isRead: m.is_read,
     }));
 
@@ -483,7 +497,7 @@ class ChatService {
         avatar: otherUser.avatar_url,
       },
       lastMessage: {
-        text: latestMessage?.content || "No messages yet",
+        text: latestMessage?.content || 'No messages yet',
         timestamp: latestMessage?.timestamp || new Date().toISOString(),
         isRead: true,
       },

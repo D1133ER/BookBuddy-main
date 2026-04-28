@@ -25,6 +25,12 @@
     }
   },
   "include": ["src"],
-  "exclude": ["src/tempobook"],
+  "exclude": [
+    "src/e2e",
+    "src/tempobook",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

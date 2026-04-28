@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { chatService, ChatMessage, ChatConversation } from "@/services/chatService";
-import { useAuth } from "@/contexts/AuthContext";
-import { MOCK_DB_CHANGE_EVENT } from "@/lib/mockDb";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { chatService, ChatMessage, ChatConversation } from '@/services';
+import { useAuth } from '@/contexts/AuthContext';
+import { MOCK_DB_CHANGE_EVENT } from '@/lib/mockDb';
 
 interface ChatContextType {
   conversations: ChatConversation[];
@@ -31,7 +31,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
   // Load conversations
-  const loadConversations = useCallback(() => {
+  const loadConversations = useCallback(async () => {
     if (!isLoggedIn) {
       setConversations([]);
       setIsLoading(false);
@@ -39,11 +39,11 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const convs = chatService.getConversations();
+      const convs = await chatService.getConversations();
       setConversations(convs);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load conversations");
+      setError(err instanceof Error ? err.message : 'Failed to load conversations');
     } finally {
       setIsLoading(false);
     }
@@ -63,26 +63,28 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setIsConnected(chatService.getConnectionStatus());
 
     // Load initial conversations
-    loadConversations();
+    void loadConversations();
 
     // Subscribe to chat events
-    const unsubscribe = chatService.subscribe((event) => {
+    const unsubscribe = chatService.subscribe(async (event) => {
       switch (event.type) {
-        case "message": {
+        case 'message': {
           const message = event.payload as ChatMessage;
           // Reload conversations when new message arrives
-          loadConversations();
+          await loadConversations();
           // Also update active conversation if it matches
-          setActiveConversation((prev) => {
-            if (prev && (prev.id === message.senderId || prev.id === message.recipientId)) {
-              return chatService.getConversation(prev.id);
-            }
-            return prev;
-          });
+          if (
+            activeConversation &&
+            (activeConversation.id === message.senderId ||
+              activeConversation.id === message.recipientId)
+          ) {
+            const updated = await chatService.getConversation(activeConversation.id);
+            setActiveConversation(updated);
+          }
           break;
         }
 
-        case "typing": {
+        case 'typing': {
           const { userId, isTyping } = event.payload as { userId: string; isTyping: boolean };
           if (userId !== user.id) {
             setTypingUsers((prev) => {
@@ -109,18 +111,18 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           break;
         }
 
-        case "read":
-        case "userStatus":
-        case "usersOnline": {
-          if (event.type === "usersOnline" && Array.isArray(event.payload)) {
+        case 'read':
+        case 'userStatus':
+        case 'usersOnline': {
+          if (event.type === 'usersOnline' && Array.isArray(event.payload)) {
             setOnlineUsers(new Set(event.payload as unknown as string[]));
           }
-          loadConversations();
+          await loadConversations();
           break;
         }
 
-        case "connected":
-        case "disconnected": {
+        case 'connected':
+        case 'disconnected': {
           setIsConnected(chatService.getConnectionStatus());
           break;
         }
@@ -129,7 +131,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for DB changes
     const handleDbChange = () => {
-      loadConversations();
+      void loadConversations();
     };
     window.addEventListener(MOCK_DB_CHANGE_EVENT, handleDbChange);
 
@@ -140,37 +142,43 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user?.id, isLoggedIn, loadConversations]);
 
-  // Update active conversation when it changes
+  // Update active conversation when conversations list changes
   useEffect(() => {
-    if (activeConversation) {
-      const updated = chatService.getConversation(activeConversation.id);
-      setActiveConversation(updated);
-    }
+    const updateActiveConv = async () => {
+      if (activeConversation) {
+        const updated = await chatService.getConversation(activeConversation.id);
+        setActiveConversation(updated);
+      }
+    };
+    void updateActiveConv();
   }, [conversations]);
 
   const handleSendMessage = useCallback(
     async (recipientId: string, content: string) => {
       try {
         await chatService.sendMessage(recipientId, content);
-        loadConversations();
+        await loadConversations();
       } catch (err) {
         throw err;
       }
     },
-    [loadConversations]
+    [loadConversations],
   );
 
   const handleSendTyping = useCallback((recipientId: string, isTyping: boolean) => {
     chatService.sendTypingIndicator(recipientId, isTyping);
   }, []);
 
-  const handleMarkAsRead = useCallback((conversationId: string) => {
-    chatService.markAsRead(conversationId);
-    loadConversations();
-  }, [loadConversations]);
+  const handleMarkAsRead = useCallback(
+    async (conversationId: string) => {
+      chatService.markAsRead(conversationId);
+      await loadConversations();
+    },
+    [loadConversations],
+  );
 
   const refreshConversations = useCallback(() => {
-    loadConversations();
+    void loadConversations();
   }, [loadConversations]);
 
   const handleSetActiveConversation = useCallback((conversation: ChatConversation | null) => {
@@ -198,7 +206,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 export const useChat = (): ChatContextType => {
   const context = useContext(ChatContext);
   if (context === undefined) {
-    throw new Error("useChat must be used within a ChatProvider");
+    throw new Error('useChat must be used within a ChatProvider');
   }
   return context;
 };

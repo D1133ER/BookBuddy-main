@@ -1,19 +1,19 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App.tsx";
-import "./index.css";
-import { BrowserRouter } from "react-router-dom";
-import "focus-visible/dist/focus-visible.js";
-import { ensureMockDbSeeded } from "@/lib/mockDbSeed";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+import { BrowserRouter } from 'react-router-dom';
+import 'focus-visible/dist/focus-visible.js';
+import { ensureMockDbSeeded } from '@/lib/mockDbSeed';
 
 const basename = import.meta.env.BASE_URL;
 
-ensureMockDbSeeded();
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <BrowserRouter basename={basename}>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>,
-);
+ensureMockDbSeeded().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <BrowserRouter basename={basename}>
+        <App />
+      </BrowserRouter>
+    </React.StrictMode>,
+  );
+});

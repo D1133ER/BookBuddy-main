@@ -18,7 +18,7 @@ class HttpClient {
 
   private async parseResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       let details: unknown;
@@ -40,7 +40,7 @@ class HttpClient {
 
     if (contentType && contentType.includes('application/json')) {
       const data: ApiResponse<T> = await response.json();
-      
+
       if ('success' in data && !data.success) {
         throw new ApiError(data.error.message, 400, data.error.details);
       }
@@ -53,7 +53,7 @@ class HttpClient {
 
   private buildUrl(endpoint: string, params?: Record<string, string>): string {
     const url = new URL(endpoint, this.baseURL);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -65,11 +65,6 @@ class HttpClient {
     return url.toString();
   }
 
-  private getAuthHeader(): Record<string, string> {
-    const token = localStorage.getItem('auth_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
   async get<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const { params, ...init } = config;
     const url = this.buildUrl(endpoint, params);
@@ -78,9 +73,9 @@ class HttpClient {
       method: 'GET',
       headers: {
         ...this.defaultHeaders,
-        ...this.getAuthHeader(),
         ...init.headers,
       },
+      credentials: 'include',
       ...init,
     });
 
@@ -95,9 +90,9 @@ class HttpClient {
       method: 'POST',
       headers: {
         ...this.defaultHeaders,
-        ...this.getAuthHeader(),
         ...init.headers,
       },
+      credentials: 'include',
       body: data ? JSON.stringify(data) : undefined,
       ...init,
     });
@@ -113,9 +108,9 @@ class HttpClient {
       method: 'PUT',
       headers: {
         ...this.defaultHeaders,
-        ...this.getAuthHeader(),
         ...init.headers,
       },
+      credentials: 'include',
       body: data ? JSON.stringify(data) : undefined,
       ...init,
     });
@@ -131,9 +126,9 @@ class HttpClient {
       method: 'PATCH',
       headers: {
         ...this.defaultHeaders,
-        ...this.getAuthHeader(),
         ...init.headers,
       },
+      credentials: 'include',
       body: data ? JSON.stringify(data) : undefined,
       ...init,
     });
@@ -149,9 +144,9 @@ class HttpClient {
       method: 'DELETE',
       headers: {
         ...this.defaultHeaders,
-        ...this.getAuthHeader(),
         ...init.headers,
       },
+      credentials: 'include',
       ...init,
     });
 
@@ -171,9 +166,11 @@ class HttpClient {
   }
 }
 
-// Create singleton instance
-export const apiClient = new HttpClient(
-  import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-);
+const apiURL =
+  import.meta.env.VITE_USE_MOCK_DB === 'false'
+    ? import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    : 'mock';
+
+export const apiClient = new HttpClient(apiURL);
 
 export default HttpClient;

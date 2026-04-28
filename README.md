@@ -1,35 +1,42 @@
-# BookBuddy - Book Exchange Platform
+# BookBuddy - Modern Book Exchange Platform
 
-A modern, production-grade book exchange platform built with React, TypeScript, and Vite. Share, borrow, and discover books within your community.
+A modern, production-grade web application built to facilitate a community-driven book exchange platform. BookBuddy allows users to manage their personal book collections, browse an extensive catalog of books, borrow/lend books with other users, and communicate via a real-time messaging system.
 
 ## 🚀 Features
 
-- **User Authentication** - Secure login and registration with protected routes
-- **Book Catalog** - Browse and search books with real-time metadata from Google Books API
-- **Book Management** - Add, manage, and track your personal book collection
-- **Transaction System** - Request, approve, and manage book borrowing/lending
-- **Messaging** - Communicate with other users in real-time
-- **Dashboard** - Analytics and insights on your book exchange activity
-- **Responsive Design** - Fully responsive UI that works on all devices
-- **Type Safety** - Full TypeScript support with strict mode enabled
+- **User Authentication** - Secure login and registration with protected routes and context-based state management.
+- **Advanced Book Catalog** - Browse, search, and filter books using advanced criteria (Genre, Availability, Condition). Optimized with **Virtual Scrolling** (`react-window`) to smoothly handle thousands of items.
+- **Book Management** - Add, manage, and track your personal book collection and borrowed books via a dedicated dashboard.
+- **Wishlist System** - Save books you're interested in reading to a personal Wishlist for easy tracking and requesting later.
+- **Transaction System** - End-to-end workflow to request, approve, and manage book borrowing/lending transactions.
+- **Real-Time Messaging** - Communicate with other users in real-time via a dedicated Socket.IO chat server. Includes online status tracking.
+- **Dashboard & Analytics** - View analytics and insights on your book exchange activity.
+- **Responsive & Accessible UI** - Fully responsive interface built with Tailwind CSS, Radix UI, and Framer Motion animations. Optimized for keyboard navigation and screen readers.
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-- **Frontend Framework**: React 18 with TypeScript
-- **Build Tool**: Vite 5.2
+### Frontend
+
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite 5
 - **Routing**: React Router v6
 - **UI Components**: Radix UI + shadcn/ui
 - **Styling**: Tailwind CSS 3.4
 - **Animations**: Framer Motion
 - **Form Validation**: React Hook Form + Zod
-- **HTTP Client**: Custom API client with error handling
-- **Database**: PostgreSQL (via Docker/Podman)
+- **Performance**: `react-window` for virtualized list rendering
+
+### Backend & Data Layer
+
+- **Mock Database**: The application currently uses an advanced in-memory mock database (`src/lib/mockDb.ts`) backed by `localStorage`. It simulates real API interactions (via latency injection and promises) and includes an event emitter (`bookbuddy:db-change`) to ensure the UI stays synchronized across components.
+- **Real-Time Server**: A lightweight Node.js server (`server/index.js`) powered by `Socket.IO` handles real-time chat functionality and tracks user online status independently of the MockDB.
+- **Database Provisioning**: Includes a `compose.yaml` to spin up a local PostgreSQL database for future backend integration.
 
 ## 📋 Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
-- Podman or Docker (for database)
+- **Node.js** 18+
+- **npm** or **yarn**
+- _(Optional)_ Podman or Docker (for spinning up the local Postgres database)
 
 ## 🚀 Getting Started
 
@@ -42,8 +49,16 @@ cd BookBuddy
 
 ### 2. Install Dependencies
 
+Install dependencies for both the frontend application and the real-time server:
+
 ```bash
+# Install frontend dependencies
 npm install
+
+# Install server dependencies
+cd server
+npm install
+cd ..
 ```
 
 ### 3. Environment Setup
@@ -54,120 +69,81 @@ Copy the example environment file and update as needed:
 cp .env.example .env
 ```
 
-### 4. Start Database (Optional)
+### 4. Start Development Servers
 
-If you want to use a real PostgreSQL database:
+You will need to start both the Vite development server and the Socket.IO chat server.
+
+**Terminal 1 (Real-Time Server):**
 
 ```bash
-npm run db:start
+npm run server
 ```
 
-### 5. Start Development Server
+**Terminal 2 (Frontend):**
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:5173`.
+
+### 5. Start Database (Optional)
+
+If you intend to transition away from the MockDB and use a real PostgreSQL database:
+
+```bash
+npm run db:start
+```
 
 ## 📦 Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run dev:all` | Start dev server + database |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
-| `npm run db:start` | Start database container |
-| `npm run db:stop` | Stop database container |
+| Command            | Description                                |
+| ------------------ | ------------------------------------------ |
+| `npm run dev`      | Start the Vite frontend development server |
+| `npm run server`   | Start the Socket.IO real-time chat server  |
+| `npm run build`    | Build the frontend for production          |
+| `npm run preview`  | Preview the production build locally       |
+| `npm run lint`     | Run ESLint                                 |
+| `npm run test`     | Run the Vitest test suite                  |
+| `npm run db:start` | Start the PostgreSQL database container    |
+| `npm run db:stop`  | Stop the PostgreSQL database container     |
 
 ## 🏗️ Project Structure
 
-```
+```text
 BookBuddy-main/
 ├── src/
-│   ├── components/        # React components
-│   │   ├── auth/         # Authentication components
-│   │   ├── books/        # Book-related components
-│   │   ├── dashboard/    # Dashboard components
-│   │   ├── layout/       # Layout components (Navbar, Footer, etc.)
-│   │   ├── messaging/    # Messaging components
-│   │   ├── transactions/ # Transaction components
-│   │   └── ui/           # Reusable UI components
-│   ├── contexts/         # React contexts (Auth, etc.)
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Utilities and configurations
-│   ├── pages/            # Page components
-│   ├── services/         # API service layer
-│   └── types/            # TypeScript type definitions
+│   ├── components/        # Reusable React components (Auth, Books, UI primitives)
+│   ├── contexts/          # React Context providers (AuthContext, ChatContext)
+│   ├── hooks/             # Custom React hooks (e.g., useCatalogData)
+│   ├── lib/               # Utilities, MockDB implementation, validations, and analytics
+│   ├── pages/             # Route components (lazy-loaded in App.tsx)
+│   ├── services/          # API service abstractions (bookService, chatService)
+│   ├── types/             # Shared TypeScript type definitions
+│   └── test/              # Vitest unit and component tests
+├── server/
+│   ├── index.js           # Node.js + Socket.IO real-time server entry point
+│   └── package.json       # Server-specific dependencies
 ├── db/
-│   └── init.sql          # Database schema
-├── public/               # Static assets
-└── package.json
+│   └── init.sql           # Initial database schema setup
+├── public/                # Static assets
+└── package.json           # Frontend dependencies and scripts
 ```
 
-## 🔐 Authentication
+## 🔒 Security & Validation
 
-The application uses a context-based authentication system with:
-- Protected routes for authenticated pages
-- Session persistence via localStorage
-- Token-based authentication ready for backend integration
+- **Zod Schemas**: All forms (Login, Registration, Add Book, Profile Settings) are protected by strict Zod schemas to ensure type-safe validation before submission.
+- **Protected Routes**: React Router handles authentication states, redirecting unauthenticated users away from protected views (`/my-books`, `/dashboard`, etc.).
+- **Strict TypeScript**: Enforces robust type-checking across the entire application to prevent runtime exceptions.
 
-## 🎨 UI Components
+## 🚀 Future Roadmap & Migration
 
-Built with Radix UI primitives and styled with Tailwind CSS:
-- Accessible by default
-- Fully customizable
-- Dark mode support ready
-- Responsive design
+The current architecture is intentionally decoupled. The `src/services/` layer abstracts all data fetching.
 
-## 📝 Form Validation
+To migrate from the MockDB to a real backend (e.g., Express/PostgreSQL or Supabase):
 
-All forms use Zod for schema validation:
-- Type-safe validation
-- Comprehensive error messages
-- Client-side validation before submission
-
-## 🔒 Security Best Practices
-
-- Strict TypeScript enabled
-- Input validation on all forms
-- Protected routes for authenticated content
-- Environment variable configuration
-- Error boundaries for graceful error handling
-- XSS protection through React's built-in safeguards
-
-## 🚀 Production Deployment
-
-### Build for Production
-
-```bash
-npm run build
-```
-
-The optimized production build will be in the `dist/` folder.
-
-### Deployment Options
-
-- **Vercel**: `vercel deploy`
-- **Netlify**: `netlify deploy`
-- **Docker**: Use the provided Docker configuration
-- **Static Hosting**: Upload `dist/` folder to any static host
-
-## 🧪 Testing
-
-Testing framework setup (coming soon):
-- Unit tests with Vitest
-- Component tests with React Testing Library
-- E2E tests with Playwright
-
-## 📚 API Integration
-
-The application is ready to integrate with a backend API:
-- HTTP client with error handling (`src/lib/api-client.ts`)
-- Service layer abstraction (`src/services/`)
-- Environment-based API configuration
+1. Keep the UI components and custom hooks exactly as they are.
+2. Update the implementation of the functions within `src/services/` (like `bookService.ts` and `transactionService.ts`) to make actual `fetch` or `axios` HTTP requests to your new backend API instead of calling `mockDb.ts`.
 
 ## 🤝 Contributing
 
@@ -180,18 +156,3 @@ The application is ready to integrate with a backend API:
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- Your Name - Initial work
-
-## 🙏 Acknowledgments
-
-- [Radix UI](https://www.radix-ui.com/) for accessible UI primitives
-- [shadcn/ui](https://ui.shadcn.com/) for beautiful component designs
-- [Framer Motion](https://www.framer.com/motion/) for animations
-- [Tailwind CSS](https://tailwindcss.com/) for utility-first CSS
-
-## 📞 Support
-
-For support, email your-email@example.com or open an issue in the repository.

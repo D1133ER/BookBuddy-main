@@ -1,3 +1,5 @@
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
+
 // Define basic mock models
 export interface User {
   id: string;
@@ -71,86 +73,120 @@ export interface WishlistItem {
 }
 
 export type MockDbCollectionKey =
-  | "users"
-  | "books"
-  | "transactions"
-  | "reviews"
-  | "messages"
-  | "wishlist"
-  | "session";
+  | 'users'
+  | 'books'
+  | 'transactions'
+  | 'reviews'
+  | 'messages'
+  | 'wishlist'
+  | 'session';
 
-export const MOCK_DB_CHANGE_EVENT = "bookbuddy:db-change";
+export const MOCK_DB_CHANGE_EVENT = 'bookbuddy:db-change';
+
+interface BookBuddyDB extends DBSchema {
+  collections: {
+    key: string;
+    value: any;
+  };
+}
 
 class MockDB {
-  private get<T>(key: string): T[] {
-    const data = localStorage.getItem(key);
+  private dbPromise: Promise<IDBPDatabase<BookBuddyDB>>;
+  private channel: BroadcastChannel;
 
-    if (!data) {
-      return [];
-    }
+  constructor() {
+    this.dbPromise = openDB<BookBuddyDB>('bookbuddy-db', 1, {
+      upgrade(db) {
+        db.createObjectStore('collections');
+      },
+    });
 
-    try {
-      return JSON.parse(data) as T[];
-    } catch {
-      localStorage.removeItem(key);
-      return [];
-    }
+    this.channel = new BroadcastChannel('bookbuddy:db-sync');
+    this.channel.onmessage = (event) => {
+      if (event.data && event.data.type === 'db-change') {
+        this.emitChangeEvent(event.data.key, false);
+      }
+    };
   }
 
-  private set<T>(key: Exclude<MockDbCollectionKey, "session">, data: T[]) {
-    localStorage.setItem(key, JSON.stringify(data));
-    this.emitChange(key);
+  private async getCollection<T>(key: MockDbCollectionKey): Promise<T[]> {
+    const db = await this.dbPromise;
+    return (await db.get('collections', key)) || [];
   }
 
-  private emitChange(key: MockDbCollectionKey) {
-    if (typeof window === "undefined") {
-      return;
-    }
+  private async setCollection<T>(key: MockDbCollectionKey, data: T[]) {
+    const db = await this.dbPromise;
+    await db.put('collections', data, key);
+    this.emitChangeEvent(key, true);
+  }
+
+  private emitChangeEvent(key: MockDbCollectionKey, broadcast: boolean) {
+    if (typeof window === 'undefined') return;
 
     window.dispatchEvent(
       new CustomEvent(MOCK_DB_CHANGE_EVENT, {
         detail: { key },
       }),
     );
-  }
 
-  public get users() { return this.get<User>('users'); }
-  public set users(data: User[]) { this.set('users', data); }
-
-  public get books() { return this.get<Book>('books'); }
-  public set books(data: Book[]) { this.set('books', data); }
-
-  public get transactions() { return this.get<Transaction>('transactions'); }
-  public set transactions(data: Transaction[]) { this.set('transactions', data); }
-
-  public get reviews() { return this.get<Review>('reviews'); }
-  public set reviews(data: Review[]) { this.set('reviews', data); }
-
-  public get messages() { return this.get<Message>('messages'); }
-  public set messages(data: Message[]) { this.set('messages', data); }
-
-  public get session() { 
-    const session = localStorage.getItem('session');
-
-    if (!session) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(session);
-    } catch {
-      localStorage.removeItem('session');
-      return null;
+    if (broadcast) {
+      this.channel.postMessage({ type: 'db-change', key });
     }
   }
-  public set session(data: any) { 
-    if (data) localStorage.setItem('session', JSON.stringify(data));
-    else localStorage.removeItem('session');
-    this.emitChange('session');
+
+  // Getters/Setters replaced with async methods
+  public async getUsers() {
+    return this.getCollection<User>('users');
+  }
+  public async setUsers(data: User[]) {
+    await this.setCollection('users', data);
   }
 
-  public get wishlist() { return this.get<WishlistItem>('wishlist'); }
-  public set wishlist(data: WishlistItem[]) { this.set('wishlist', data); }
+  public async getBooks() {
+    return this.getCollection<Book>('books');
+  }
+  public async setBooks(data: Book[]) {
+    await this.setCollection('books', data);
+  }
+
+  public async getTransactions() {
+    return this.getCollection<Transaction>('transactions');
+  }
+  public async setTransactions(data: Transaction[]) {
+    await this.setCollection('transactions', data);
+  }
+
+  public async getReviews() {
+    return this.getCollection<Review>('reviews');
+  }
+  public async setReviews(data: Review[]) {
+    await this.setCollection('reviews', data);
+  }
+
+  public async getMessages() {
+    return this.getCollection<Message>('messages');
+  }
+  public async setMessages(data: Message[]) {
+    await this.setCollection('messages', data);
+  }
+
+  public async getSession() {
+    const db = await this.dbPromise;
+    return (await db.get('collections', 'session')) || null;
+  }
+  public async setSession(data: any) {
+    const db = await this.dbPromise;
+    if (data) await db.put('collections', data, 'session');
+    else await db.delete('collections', 'session');
+    this.emitChangeEvent('session', true);
+  }
+
+  public async getWishlist() {
+    return this.getCollection<WishlistItem>('wishlist');
+  }
+  public async setWishlist(data: WishlistItem[]) {
+    await this.setCollection('wishlist', data);
+  }
 
   generateId() {
     return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;

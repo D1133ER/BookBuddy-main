@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { useSearchParams } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import PageTransition from "@/components/layout/PageTransition";
-import MessageCenter from "@/components/messaging/MessageCenter";
-import { createFadeUpItem, createStaggerContainer } from "@/lib/motion";
-import { useAuth } from "@/contexts/AuthContext";
-import { useChat } from "@/contexts/ChatContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import PageTransition from '@/components/layout/PageTransition';
+import MessageCenter from '@/components/messaging/MessageCenter';
+import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useChat } from '@/contexts/ChatContext';
+import { toast } from 'sonner';
 
+// Internal interfaces for MessageCenter compatibility
 interface Message {
   id: string;
   senderId: string;
@@ -36,79 +37,34 @@ const Messages = () => {
   const shouldReduceMotion = useReducedMotion() ?? false;
   const containerVariants = createStaggerContainer(shouldReduceMotion, 0.08, 0.04);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 18);
+
   const { user } = useAuth();
-  const { conversations, isLoading: chatLoading, sendMessage, refreshConversations } = useChat();
-  const { toast } = useToast();
+  const { conversations, isLoading: chatLoading, error: chatError, sendMessage } = useChat();
+
   const [searchParams] = useSearchParams();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const initialConversationId = searchParams.get("user");
+  const initialConversationId = searchParams.get('user');
 
-  // Convert chat conversations to the format expected by MessageCenter
-  const [conversationsData, setConversationsData] = useState<Conversation[]>([]);
-
-  useEffect(() => {
-    if (chatLoading) {
-      setIsLoading(true);
-      return;
-    }
-
-    // Map chat conversations to the format expected by MessageCenter
-    const mapped: Conversation[] = conversations.map((conv) => ({
+  // Map the chat service conversations to the format expected by MessageCenter
+  const conversationsData = useMemo<Conversation[]>(() => {
+    return conversations.map((conv) => ({
       id: conv.id,
       user: conv.user,
-      lastMessage: conv.lastMessage,
+      lastMessage: conv.lastMessage, // already has 'text' in ChatConversation
       messages: conv.messages.map((m) => ({
         id: m.id,
         senderId: m.senderId,
-        text: m.content,
+        text: m.content, // Map 'content' to 'text'
         timestamp: m.timestamp,
       })),
     }));
-
-    setConversationsData(mapped);
-    setIsLoading(false);
-  }, [conversations, chatLoading]);
-
-  const loadConversations = useCallback(async (showLoader = true) => {
-    if (!user?.id) {
-      setConversationsData([]);
-      setIsLoading(false);
-      return;
-    }
-
-    if (showLoader) {
-      setIsLoading(true);
-    }
-
-    try {
-      // Use chat service data
-      refreshConversations();
-      setError(null);
-    } catch (loadError: any) {
-      setError(loadError.message || "Unable to load your conversations right now.");
-    } finally {
-      if (showLoader) {
-        setIsLoading(false);
-      }
-    }
-  }, [refreshConversations, user?.id]);
-
-  useEffect(() => {
-    if (user?.id) {
-      void loadConversations();
-    }
-  }, [loadConversations, user?.id]);
+  }, [conversations]);
 
   const handleSendMessage = async (recipientId: string, content: string) => {
     try {
       await sendMessage(recipientId, content);
-      await loadConversations(false);
     } catch (sendError: any) {
-      toast({
-        title: "Message not sent",
-        description: sendError.message || "Please try again in a moment.",
-        variant: "destructive",
+      toast.error('Message not sent', {
+        description: sendError.message || 'Please try again in a moment.',
       });
     }
   };
@@ -128,18 +84,22 @@ const Messages = () => {
             <motion.div variants={itemVariants}>
               <h1 className="text-3xl font-bold mb-2">Messages</h1>
               <p className="text-muted-foreground">
-                Coordinate pickup windows, confirm return dates, and keep every exchange in one thread.
+                Coordinate pickup windows, confirm return dates, and keep every exchange in one
+                thread.
               </p>
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              {isLoading ? (
+              {chatLoading && conversationsData.length === 0 ? (
                 <div className="flex h-[420px] items-center justify-center rounded-lg border bg-white">
-                  <p className="text-sm text-muted-foreground">Loading your conversations...</p>
+                  <p className="text-sm text-muted-foreground font-medium animate-pulse">
+                    Loading your conversations...
+                  </p>
                 </div>
-              ) : error ? (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                  {error}
+              ) : chatError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
+                  <p className="font-semibold mb-1">Could not load chat</p>
+                  <p>{chatError}</p>
                 </div>
               ) : (
                 <MessageCenter

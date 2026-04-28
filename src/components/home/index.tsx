@@ -1,42 +1,17 @@
+import { Suspense, lazy, useEffect, useState, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import HeroSection from './HeroSection';
+import PublicNavbar from '../layout/PublicNavbar';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAvailableBooks } from '@/hooks/useBooks';
+import { useRequestBookMutation } from '@/hooks/useTransactions';
+import { toast } from 'sonner';
 
-import { Suspense, lazy, useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import HeroSection from "./HeroSection";
-import PublicNavbar from "../layout/PublicNavbar";
-import { MOCK_DB_CHANGE_EVENT, db } from "@/lib/mockDb";
-import { DEFAULT_BOOK_COVER } from "@/lib/mockDbSeed";
-import { Book } from "@/types/book";
+const FeaturedBooks = lazy(() => import('./FeaturedBooks'));
+const HowItWorks = lazy(() => import('./HowItWorks'));
+const Footer = lazy(() => import('../layout/Footer'));
 
-const FeaturedBooks = lazy(() => import("./FeaturedBooks"));
-const HowItWorks = lazy(() => import("./HowItWorks"));
-const Footer = lazy(() => import("../layout/Footer"));
-
-const readFeaturedBooks = (): Book[] =>
-  db.books.slice(0, 6).map((book) => ({
-    id: book.id,
-    title: book.title,
-    author: book.author,
-    coverImage: book.cover_image || DEFAULT_BOOK_COVER,
-    condition: book.condition,
-    available: book.available,
-    description: book.description,
-    owner_id: book.owner_id,
-    isbn: book.isbn,
-    publicationDate: book.publication_date,
-    genre: book.genre,
-    rating: book.rating,
-    ratingsCount: book.ratings_count,
-    publisher: book.publisher,
-    source: book.source,
-  }));
-
-const SectionPlaceholder = ({
-  id,
-  className,
-}: {
-  id?: string;
-  className: string;
-}) => (
+const SectionPlaceholder = ({ id, className }: { id?: string; className: string }) => (
   <section id={id} aria-hidden="true" className={className}>
     <div className="container mx-auto max-w-6xl px-4 py-10">
       <div className="h-8 w-52 rounded-full bg-slate-200" />
@@ -53,38 +28,23 @@ const SectionPlaceholder = ({
 const FooterPlaceholder = () => <div aria-hidden="true" className="min-h-[240px] bg-slate-900" />;
 
 const Home = () => {
-  const [featuredBooks, setFeaturedBooks] = useState<Book[]>(() => readFeaturedBooks());
+  const { data: books = [] } = useAvailableBooks();
+  const featuredBooks = useMemo(() => books.slice(0, 6), [books]);
+
   const [showDeferredSections, setShowDeferredSections] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+  const requestMutation = useRequestBookMutation();
 
   useEffect(() => {
-    if (!location.hash) {
-      return;
-    }
-
+    if (!location.hash) return;
     const target = document.getElementById(location.hash.slice(1));
     if (target) {
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
     }
   }, [location.hash]);
-
-  useEffect(() => {
-    const handleDbChange = (event: Event) => {
-      const detail = (event as CustomEvent<{ key?: string }>).detail;
-
-      if (!detail?.key || ["books", "transactions", "reviews"].includes(detail.key)) {
-        setFeaturedBooks(readFeaturedBooks());
-      }
-    };
-
-    window.addEventListener(MOCK_DB_CHANGE_EVENT, handleDbChange as EventListener);
-
-    return () => {
-      window.removeEventListener(MOCK_DB_CHANGE_EVENT, handleDbChange as EventListener);
-    };
-  }, []);
 
   useEffect(() => {
     let timeoutId = 0;
@@ -99,26 +59,19 @@ const Home = () => {
   }, []);
 
   const handleFeaturedRequest = async (bookId: string) => {
-    if (!db.session?.user) {
-      navigate("/login", { state: { from: location } });
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: location } });
       return;
     }
 
-    const { toast } = await import("@/components/ui/use-toast");
-
     try {
-      const { requestBook } = await import("@/services/transactionService");
-
-      await requestBook(bookId);
-      toast({
-        title: "Request sent",
-        description: "The owner has been notified and your request is now tracked in Transactions.",
+      await requestMutation.mutateAsync(bookId);
+      toast.success('Request sent', {
+        description: 'The owner has been notified and your request is now tracked in Transactions.',
       });
     } catch (error: any) {
-      toast({
-        title: "Unable to request this book",
-        description: error.message || "Please try again in a moment.",
-        variant: "destructive",
+      toast.error('Unable to request this book', {
+        description: error.message || 'Please try again in a moment.',
       });
     }
   };
@@ -129,7 +82,9 @@ const Home = () => {
       <main className="pt-[70px]">
         <HeroSection />
         {showDeferredSections ? (
-          <Suspense fallback={<SectionPlaceholder id="community" className="min-h-[560px] bg-gray-50" />}>
+          <Suspense
+            fallback={<SectionPlaceholder id="community" className="min-h-[560px] bg-gray-50" />}
+          >
             <section id="community">
               <FeaturedBooks books={featuredBooks} onRequest={handleFeaturedRequest} />
             </section>
@@ -138,7 +93,11 @@ const Home = () => {
           <SectionPlaceholder id="community" className="min-h-[560px] bg-gray-50" />
         )}
         {showDeferredSections ? (
-          <Suspense fallback={<SectionPlaceholder id="how-it-works" className="min-h-[420px] bg-slate-50" />}>
+          <Suspense
+            fallback={
+              <SectionPlaceholder id="how-it-works" className="min-h-[420px] bg-slate-50" />
+            }
+          >
             <div id="how-it-works">
               <HowItWorks />
             </div>
@@ -152,7 +111,9 @@ const Home = () => {
               Build a neighborhood shelf that actually stays organized
             </h2>
             <p className="mx-auto mb-8 max-w-3xl text-lg text-gray-700">
-              Lend the books you have finished, request titles near you, and keep pickup details inside one calm workflow. BookBuddy is designed for small local communities where trust, clarity, and follow-through matter.
+              Lend the books you have finished, request titles near you, and keep pickup details
+              inside one calm workflow. BookBuddy is designed for small local communities where
+              trust, clarity, and follow-through matter.
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <div>

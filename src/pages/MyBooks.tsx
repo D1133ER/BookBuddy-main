@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import PageTransition from "@/components/layout/PageTransition";
-import BookCard from "@/components/books/BookCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEffect, useState, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import PageTransition from '@/components/layout/PageTransition';
+import BookCard from '@/components/books/BookCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -17,45 +17,36 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus, BookOpen, BookX, Loader2, Heart } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/dialog';
+import { Plus, BookOpen, BookX, Loader2, Heart } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Book } from '@/types/book';
+import { toast } from 'sonner';
+import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
+import { DEFAULT_BOOK_COVER } from '@/lib/mockDbSeed';
+import { useAuth } from '@/contexts/AuthContext';
+import { bookSchema } from '@/lib/validations';
+import { trackEvent } from '@/lib/analytics';
 import {
-  getUserBooks,
-  addBook,
-  toggleBookAvailability,
-  getUserWishlist,
-  toggleWishlistItem,
-} from "@/services/bookService";
-import { Book, BorrowedBook } from "@/types/book";
-import { useToast } from "@/components/ui/use-toast";
-import { createFadeUpItem, createStaggerContainer } from "@/lib/motion";
-import { DEFAULT_BOOK_COVER, mapMockBookToAppBook } from "@/lib/mockDbSeed";
-import { useAuth } from "@/contexts/AuthContext";
-import { getTransactions, updateTransactionStatus } from "@/services/transactionService";
-import { bookSchema } from "@/lib/validations";
-import { trackEvent } from "@/lib/analytics";
-
-type BorrowedBookView = BorrowedBook & {
-  transactionId: string;
-  lenderId: string;
-};
+  useUserBooks,
+  useUserWishlist,
+  useAddBookMutation,
+  useToggleAvailabilityMutation,
+  useToggleWishlistMutation,
+} from '@/hooks/useBooks';
+import { useUserTransactions, useUpdateTransactionStatusMutation } from '@/hooks/useTransactions';
 
 interface AddBookFormProps {
-  onAddBook: (book: Omit<Book, "id">) => Promise<boolean>;
+  onAddBook: (book: Omit<Book, 'id'>) => Promise<boolean>;
   onClose: () => void;
   isSubmitting: boolean;
 }
 
-const AddBookForm = ({
-  onAddBook,
-  onClose,
-  isSubmitting,
-}: AddBookFormProps) => {
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [condition, setCondition] = useState("4");
-  const [coverImage, setCoverImage] = useState("");
+const AddBookForm = ({ onAddBook, onClose, isSubmitting }: AddBookFormProps) => {
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [condition, setCondition] = useState('4');
+  const [coverImage, setCoverImage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,7 +70,7 @@ const AddBookForm = ({
       return;
     }
 
-    const newBook: Omit<Book, "id"> = {
+    const newBook: Omit<Book, 'id'> = {
       title: result.data.title,
       author: result.data.author,
       condition: result.data.condition,
@@ -147,12 +138,7 @@ const AddBookForm = ({
       </div>
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
@@ -162,7 +148,7 @@ const AddBookForm = ({
               Adding...
             </>
           ) : (
-            "Add Book"
+            'Add Book'
           )}
         </Button>
       </DialogFooter>
@@ -171,109 +157,81 @@ const AddBookForm = ({
 };
 
 const MyBooks = () => {
-  const [userBooks, setUserBooks] = useState<Book[]>([]);
-  const [borrowedBooks, setBorrowedBooks] = useState<BorrowedBookView[]>([]);
-  const [wishlistBooks, setWishlistBooks] = useState<Book[]>([]);
-  const [isAddBookOpen, setIsAddBookOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { toast } = useToast();
   const { user } = useAuth();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const containerVariants = createStaggerContainer(shouldReduceMotion, 0.08, 0.04);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 18);
 
-  const loadShelf = useCallback(async () => {
-    if (!user?.id) {
-      setIsLoading(false);
-      return;
-    }
+  // Queries
+  const { data: userBooks = [], isLoading: isLoadingBooks } = useUserBooks();
+  const { data: transactions = [], isLoading: isLoadingTransactions } = useUserTransactions(
+    user?.id || '',
+    'borrower',
+  );
+  const { data: wishlistBooks = [], isLoading: isLoadingWishlist } = useUserWishlist(
+    user?.id || '',
+  );
 
-    try {
-      setIsLoading(true);
-      const [books, borrowerTransactions, wBooks] = await Promise.all([
-        getUserBooks(),
-        getTransactions({ userId: user.id, type: "borrower" }),
-        getUserWishlist(user.id),
-      ]);
+  const isLoading = isLoadingBooks || isLoadingTransactions || isLoadingWishlist;
 
-      const activeBorrowedBooks = borrowerTransactions
-        .filter((transaction) => transaction.status === "active" && transaction.book && transaction.lender)
-        .map((transaction) => ({
-          ...mapMockBookToAppBook(transaction.book!),
-          borrowedFrom: transaction.lender?.display_name || transaction.lender?.username || "Community Member",
-          dueDate: transaction.due_date || transaction.request_date || new Date().toISOString(),
-          transactionId: transaction.id,
-          lenderId: transaction.lender_id,
-          available: false,
-        }));
+  const borrowedBooks = useMemo(() => {
+    return transactions
+      .filter((t) => t.status === 'active' && t.book && t.lender)
+      .map((t) => ({
+        id: t.book!.id,
+        title: t.book!.title,
+        author: t.book!.author,
+        coverImage: t.book!.coverImage || DEFAULT_BOOK_COVER,
+        condition: t.book!.condition,
+        borrowedFrom: t.lender?.display_name || t.lender?.username || 'Community Member',
+        dueDate: t.due_date || t.request_date || new Date().toISOString(),
+        transactionId: t.id,
+        lenderId: t.lender_id,
+        available: false,
+        genre: t.book!.genre,
+        rating: t.book!.rating,
+        publicationDate: t.book!.publicationDate,
+      }));
+  }, [transactions]);
 
-      setUserBooks(books);
-      setBorrowedBooks(activeBorrowedBooks);
-      setWishlistBooks(wBooks);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error fetching books:", error);
-      }
-      toast({
-        title: "Error",
-        description: "Failed to load your books. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, user?.id]);
+  // Mutations
+  const addBookMutation = useAddBookMutation();
+  const toggleAvailabilityMutation = useToggleAvailabilityMutation();
+  const toggleWishlistMutation = useToggleWishlistMutation();
+  const updateStatusMutation = useUpdateTransactionStatusMutation();
+
+  const [isAddBookOpen, setIsAddBookOpen] = useState(false);
 
   useEffect(() => {
-    void loadShelf();
-  }, [loadShelf]);
-
-  useEffect(() => {
-    setIsAddBookOpen(searchParams.get("action") === "add");
+    setIsAddBookOpen(searchParams.get('action') === 'add');
   }, [searchParams]);
 
   const updateAddDialogState = (open: boolean) => {
     const nextParams = new URLSearchParams(searchParams);
-
-    if (open) {
-      nextParams.set("action", "add");
-    } else {
-      nextParams.delete("action");
-    }
-
+    if (open) nextParams.set('action', 'add');
+    else nextParams.delete('action');
     setSearchParams(nextParams, { replace: true });
     setIsAddBookOpen(open);
   };
 
-  const handleAddBook = async (newBook: Omit<Book, "id">) => {
+  const handleAddBook = async (newBook: Omit<Book, 'id'>) => {
     try {
-      setIsSubmitting(true);
-      await addBook(newBook);
-      await loadShelf();
+      await addBookMutation.mutateAsync(newBook);
       trackEvent({
         category: 'Content',
-        action: 'Book Added'
+        action: 'Book Added',
       });
-      toast({
-        title: "Success",
-        description: "Book added to your collection.",
+      toast.success('Success', {
+        description: 'Book added to your collection.',
       });
       return true;
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error adding book:", error);
-      }
-      toast({
-        title: "Error",
-        description: "Failed to add book. Please try again.",
-        variant: "destructive",
+      toast.error('Error', {
+        description: 'Failed to add book. Please try again.',
       });
       return false;
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -282,21 +240,13 @@ const MyBooks = () => {
       const book = userBooks.find((book) => book.id === id);
       if (!book) return;
 
-      await toggleBookAvailability(id, !book.available);
-      await loadShelf();
-
-      toast({
-        title: "Success",
-        description: `Book marked as ${!book.available ? "available" : "unavailable"}.`,
+      await toggleAvailabilityMutation.mutateAsync({ id, available: !book.available });
+      toast.success('Success', {
+        description: `Book marked as ${!book.available ? 'available' : 'unavailable'}.`,
       });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error toggling availability:", error);
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update book availability. Please try again.",
-        variant: "destructive",
+      toast.error('Error', {
+        description: 'Failed to update book availability. Please try again.',
       });
     }
   };
@@ -304,39 +254,31 @@ const MyBooks = () => {
   const handleToggleWishlist = async (id: string) => {
     if (!user) return;
     try {
-      await toggleWishlistItem(user.id, id);
-      await loadShelf();
+      await toggleWishlistMutation.mutateAsync({ userId: user.id, bookId: id });
       trackEvent({
         category: 'Engagement',
         action: 'Wishlist Toggled',
-        label: id
+        label: id,
       });
-      toast({
-        title: "Wishlist updated",
-        description: "Book removed from your wishlist.",
+      toast.success('Wishlist updated', {
+        description: 'Book removed from your wishlist.',
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update wishlist. Please try again.",
-        variant: "destructive",
+      toast.error('Error', {
+        description: 'Failed to update wishlist. Please try again.',
       });
     }
   };
 
   const handleReturnBook = async (transactionId: string) => {
     try {
-      await updateTransactionStatus(transactionId, "completed");
-      await loadShelf();
-      toast({
-        title: "Return recorded",
-        description: "The book is now marked as returned and available again for the lender.",
+      await updateStatusMutation.mutateAsync({ id: transactionId, status: 'completed' });
+      toast.success('Return recorded', {
+        description: 'The book is now marked as returned and available again for the lender.',
       });
     } catch (error) {
-      toast({
-        title: "Unable to complete return",
-        description: "Please try again from the Transactions page if this keeps happening.",
-        variant: "destructive",
+      toast.error('Unable to complete return', {
+        description: 'Please try again from the Transactions page if this keeps happening.',
       });
     }
   };
@@ -356,12 +298,13 @@ const MyBooks = () => {
           variants={containerVariants}
           className="container mx-auto max-w-7xl"
         >
-          <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+          >
             <div>
               <h1 className="text-3xl font-bold mb-2">My Books</h1>
-              <p className="text-gray-600">
-                Manage your book collection and borrowed books
-              </p>
+              <p className="text-gray-600">Manage your book collection and borrowed books</p>
             </div>
 
             <Dialog open={isAddBookOpen} onOpenChange={updateAddDialogState}>
@@ -375,207 +318,215 @@ const MyBooks = () => {
                 <DialogHeader>
                   <DialogTitle>Add a New Book</DialogTitle>
                   <DialogDescription>
-                    Enter the details of the book you want to add to your
-                    collection.
+                    Enter the details of the book you want to add to your collection.
                   </DialogDescription>
                 </DialogHeader>
                 <AddBookForm
                   onAddBook={handleAddBook}
                   onClose={() => updateAddDialogState(false)}
-                  isSubmitting={isSubmitting}
+                  isSubmitting={addBookMutation.isPending}
                 />
               </DialogContent>
             </Dialog>
           </motion.div>
 
           <motion.div variants={itemVariants}>
-          <Tabs defaultValue="my-books" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="my-books" className="flex items-center">
-                <BookOpen className="mr-2 h-4 w-4" />
-                My Books ({userBooks.length})
-              </TabsTrigger>
-              <TabsTrigger value="borrowed" className="flex items-center">
-                <BookX className="mr-2 h-4 w-4" />
-                Borrowed ({borrowedBooks.length})
-              </TabsTrigger>
-              <TabsTrigger value="wishlist" className="flex items-center">
-                <Heart className="mr-2 h-4 w-4" />
-                Wishlist ({wishlistBooks.length})
-              </TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="my-books" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="my-books" className="flex items-center">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  My Books ({userBooks.length})
+                </TabsTrigger>
+                <TabsTrigger value="borrowed" className="flex items-center">
+                  <BookX className="mr-2 h-4 w-4" />
+                  Borrowed ({borrowedBooks.length})
+                </TabsTrigger>
+                <TabsTrigger value="wishlist" className="flex items-center">
+                  <Heart className="mr-2 h-4 w-4" />
+                  Wishlist ({wishlistBooks.length})
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="my-books">
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl border bg-white p-0 overflow-hidden">
-                      <Skeleton className="h-[180px] w-full" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-4 w-1/3" />
-                        <Skeleton className="h-9 w-full mt-2" />
+              <TabsContent value="my-books">
+                {isLoading && userBooks.length === 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="rounded-2xl border bg-white p-0 overflow-hidden">
+                        <Skeleton className="h-[180px] w-full" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-5 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                          <Skeleton className="h-4 w-1/3" />
+                          <Skeleton className="h-9 w-full mt-2" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : userBooks.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-                  <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    No books in your collection yet
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    Add books to your collection to share with others
-                  </p>
-                  <Button onClick={() => updateAddDialogState(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Your First Book
-                  </Button>
-                </div>
-              ) : (
-                <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {userBooks.map((book) => (
-                    <motion.div key={book.id} variants={itemVariants} className="flex justify-center">
-                      <BookCard
-                        id={book.id}
-                        title={book.title}
-                        author={book.author}
-                        coverImage={book.coverImage}
-                        condition={book.condition}
-                        available={book.available}
-                        genre={book.genre}
-                        rating={book.rating}
-                        publicationDate={book.publicationDate}
-                        onRequest={() => handleToggleAvailability(book.id)}
-                      />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="borrowed">
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl border bg-white overflow-hidden">
-                      <Skeleton className="h-[180px] w-full" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-9 w-full mt-2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : borrowedBooks.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-                  <BookX className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    No borrowed books
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    You haven't borrowed any books yet
-                  </p>
-                  <Button onClick={() => navigate("/catalog")}>
-                    Browse Catalog
-                  </Button>
-                </div>
-              ) : (
-                <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {borrowedBooks.map((book) => (
-                    <motion.div key={book.id} variants={itemVariants} className="flex justify-center">
-                      <div className="w-[250px] h-[400px] overflow-hidden flex flex-col bg-white rounded-lg shadow-md">
+                    ))}
+                  </div>
+                ) : userBooks.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                    <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No books in your collection yet</h3>
+                    <p className="text-gray-500 mb-4">
+                      Add books to your collection to share with others
+                    </p>
+                    <Button onClick={() => updateAddDialogState(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Your First Book
+                    </Button>
+                  </div>
+                ) : (
+                  <motion.div
+                    variants={containerVariants}
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                  >
+                    {userBooks.map((book) => (
+                      <motion.div
+                        key={book.id}
+                        variants={itemVariants}
+                        className="flex justify-center"
+                      >
                         <BookCard
                           id={book.id}
                           title={book.title}
                           author={book.author}
                           coverImage={book.coverImage}
                           condition={book.condition}
-                          available={false}
+                          available={book.available}
+                          genre={book.genre}
+                          rating={book.rating}
+                          publicationDate={book.publicationDate}
+                          onRequest={() => handleToggleAvailability(book.id)}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="borrowed">
+                {isLoading && borrowedBooks.length === 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="rounded-2xl border bg-white overflow-hidden">
+                        <Skeleton className="h-[180px] w-full" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-5 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                          <Skeleton className="h-9 w-full mt-2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : borrowedBooks.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                    <BookX className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No borrowed books</h3>
+                    <p className="text-gray-500 mb-4">You haven't borrowed any books yet</p>
+                    <Button onClick={() => navigate('/catalog')}>Browse Catalog</Button>
+                  </div>
+                ) : (
+                  <motion.div
+                    variants={containerVariants}
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                  >
+                    {borrowedBooks.map((book) => (
+                      <motion.div
+                        key={book.transactionId}
+                        variants={itemVariants}
+                        className="flex justify-center"
+                      >
+                        <div className="w-[250px] h-[400px] overflow-hidden flex flex-col bg-white rounded-lg shadow-md">
+                          <BookCard
+                            id={book.id}
+                            title={book.title}
+                            author={book.author}
+                            coverImage={book.coverImage}
+                            condition={book.condition}
+                            available={false}
+                            genre={book.genre}
+                            rating={book.rating}
+                            publicationDate={book.publicationDate}
+                            onRequest={() => {}}
+                            borrowed={true}
+                          />
+                          <div className="p-4 bg-gray-50 border-t border-gray-200">
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-medium">From:</span> {book.borrowedFrom}
+                            </p>
+                            <p className="text-sm text-gray-600 mb-3">
+                              <span className="font-medium">Due:</span>{' '}
+                              {new Date(book.dueDate).toLocaleDateString()}
+                            </p>
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => handleReturnBook(book.transactionId)}
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Returned'}
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="wishlist">
+                {isLoading && wishlistBooks.length === 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="rounded-2xl border bg-white overflow-hidden">
+                        <Skeleton className="h-[180px] w-full" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-5 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                          <Skeleton className="h-9 w-full mt-2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : wishlistBooks.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                    <Heart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
+                    <p className="text-gray-500 mb-4">
+                      Explore the catalog and save books you're interested in
+                    </p>
+                    <Button onClick={() => navigate('/catalog')}>Browse Catalog</Button>
+                  </div>
+                ) : (
+                  <motion.div
+                    variants={containerVariants}
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                  >
+                    {wishlistBooks.map((book) => (
+                      <motion.div
+                        key={book.id}
+                        variants={itemVariants}
+                        className="flex justify-center"
+                      >
+                        <BookCard
+                          id={book.id}
+                          title={book.title}
+                          author={book.author}
+                          coverImage={book.coverImage}
+                          condition={book.condition}
+                          available={book.available}
                           genre={book.genre}
                           rating={book.rating}
                           publicationDate={book.publicationDate}
                           onRequest={() => {}}
-                          borrowed={true}
+                          isWishlisted={true}
+                          onToggleWishlist={handleToggleWishlist}
                         />
-                        <div className="p-4 bg-gray-50 border-t border-gray-200">
-                          <p className="text-sm text-gray-600 mb-1">
-                            <span className="font-medium">From:</span>{" "}
-                            {book.borrowedFrom}
-                          </p>
-                          <p className="text-sm text-gray-600 mb-3">
-                            <span className="font-medium">Due:</span>{" "}
-                            {new Date(book.dueDate).toLocaleDateString()}
-                          </p>
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => handleReturnBook(book.transactionId)}
-                          >
-                            Mark as Returned
-                          </Button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="wishlist">
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl border bg-white overflow-hidden">
-                      <Skeleton className="h-[180px] w-full" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-9 w-full mt-2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : wishlistBooks.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-                  <Heart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Your wishlist is empty
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    Explore the catalog and save books you're interested in
-                  </p>
-                  <Button onClick={() => navigate("/catalog")}>
-                    Browse Catalog
-                  </Button>
-                </div>
-              ) : (
-                <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {wishlistBooks.map((book) => (
-                    <motion.div key={book.id} variants={itemVariants} className="flex justify-center">
-                      <BookCard
-                        id={book.id}
-                        title={book.title}
-                        author={book.author}
-                        coverImage={book.coverImage}
-                        condition={book.condition}
-                        available={book.available}
-                        genre={book.genre}
-                        rating={book.rating}
-                        publicationDate={book.publicationDate}
-                        onRequest={() => {}}
-                        isWishlisted={true}
-                        onToggleWishlist={handleToggleWishlist}
-                      />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </TabsContent>
-          </Tabs>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </TabsContent>
+            </Tabs>
           </motion.div>
         </motion.div>
       </main>
