@@ -20,12 +20,15 @@ export const getTransactions = async (filters: {
   const users = await db.getUsers();
 
   return userTransactions
-    .map((t) => ({
-      ...t,
-      book: mapMockBookToAppBook(books.find((b) => b.id === t.book_id) as any),
-      borrower: users.find((u) => u.id === t.borrower_id),
-      lender: users.find((u) => u.id === t.lender_id),
-    }))
+    .map((t) => {
+      const foundBook = books.find((b) => b.id === t.book_id);
+      return {
+        ...t,
+        book: foundBook ? mapMockBookToAppBook(foundBook) : undefined,
+        borrower: users.find((u) => u.id === t.borrower_id),
+        lender: users.find((u) => u.id === t.lender_id),
+      };
+    })
     .sort((a, b) => (a.request_date && b.request_date && a.request_date < b.request_date ? 1 : -1));
 };
 

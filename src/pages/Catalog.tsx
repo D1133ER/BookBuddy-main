@@ -30,6 +30,7 @@ import { useRequestBookMutation, useToggleWishlistMutation } from '@/hooks/useTr
 import { useUserWishlist, useBook } from '@/hooks/useBooks';
 import { trackEvent } from '@/lib/analytics';
 import { Grid } from 'react-window';
+import { getErrorMessage } from '@/lib/helpers';
 
 const Catalog = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -95,9 +96,9 @@ const Catalog = () => {
       toast.success('Request sent', {
         description: 'The owner has been notified and your request is now listed in Transactions.',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error('Unable to request book', {
-        description: err.message || 'Please try again in a moment.',
+        description: getErrorMessage(err, 'Please try again in a moment.'),
       });
     }
   };
@@ -175,7 +176,9 @@ const Catalog = () => {
                 <div className="w-full md:w-1/3">
                   <Select
                     value={filters.sortBy}
-                    onValueChange={(val: any) => setFilters({ ...filters, sortBy: val })}
+                    onValueChange={(val) =>
+                      setFilters({ ...filters, sortBy: val as typeof filters.sortBy })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sort By" />

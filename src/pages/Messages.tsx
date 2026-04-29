@@ -9,6 +9,7 @@ import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/helpers';
 
 // Internal interfaces for MessageCenter compatibility
 interface Message {
@@ -62,9 +63,9 @@ const Messages = () => {
   const handleSendMessage = async (recipientId: string, content: string) => {
     try {
       await sendMessage(recipientId, content);
-    } catch (sendError: any) {
+    } catch (sendError: unknown) {
       toast.error('Message not sent', {
-        description: sendError.message || 'Please try again in a moment.',
+        description: getErrorMessage(sendError, 'Please try again in a moment.'),
       });
     }
   };

@@ -5,8 +5,10 @@ interface EventData {
   value?: number;
 }
 
-export const trackEvent = (data: EventData) => {
-  if (process.env.NODE_ENV !== 'test') {
-    console.log('[Analytics Event]', data);
-  }
+/**
+ * Placeholder analytics tracker.
+ * Replace with your real provider (PostHog, Mixpanel, etc.) before going to production.
+ */
+export const trackEvent = (_data: EventData): void => {
+  // no-op — real events are fired by the production analytics provider
 };

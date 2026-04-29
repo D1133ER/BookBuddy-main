@@ -1,4 +1,4 @@
-import { db } from '@/lib/mockDb';
+import { db, User } from '@/lib/mockDb';
 import { DEFAULT_BOOK_COVER, mapMockBookToAppBook } from '@/lib/mockDbSeed';
 import { Book as AppBook } from '@/types/book';
 
@@ -77,7 +77,7 @@ export const getAvailableBooks = async (searchQuery?: string): Promise<AppBook[]
   return books.map(mapMockBookToAppBook);
 };
 
-export const getBookById = async (id: string): Promise<AppBook & { owner: any }> => {
+export const getBookById = async (id: string): Promise<AppBook & { owner: User | undefined }> => {
   const books = await db.getBooks();
   const book = books.find((b) => b.id === id);
   if (!book) throw new Error('Book not found');

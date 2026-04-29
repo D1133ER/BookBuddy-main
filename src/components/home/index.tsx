@@ -5,6 +5,8 @@ import PublicNavbar from '../layout/PublicNavbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAvailableBooks } from '@/hooks/useBooks';
 import { useRequestBookMutation } from '@/hooks/useTransactions';
+import { trackEvent } from '@/lib/analytics';
+import { getErrorMessage } from '@/lib/helpers';
 import { toast } from 'sonner';
 
 const FeaturedBooks = lazy(() => import('./FeaturedBooks'));
@@ -69,9 +71,9 @@ const Home = () => {
       toast.success('Request sent', {
         description: 'The owner has been notified and your request is now tracked in Transactions.',
       });
-    } catch (error: any) {
-      toast.error('Unable to request this book', {
-        description: error.message || 'Please try again in a moment.',
+    } catch (error: unknown) {
+      toast.error('Unable to request book', {
+        description: getErrorMessage(error, 'Please try again in a moment.'),
       });
     }
   };

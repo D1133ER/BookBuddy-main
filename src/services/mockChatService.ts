@@ -91,7 +91,6 @@ class ChatService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('[ChatService] Connected to server');
       this.isConnected = true;
       this.reconnectAttempts = 0;
 
@@ -109,7 +108,6 @@ class ChatService {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('[ChatService] Disconnected:', reason);
       this.isConnected = false;
       this.emitEvent('disconnected', { reason });
     });
@@ -121,8 +119,6 @@ class ChatService {
 
     // Handle incoming private messages
     this.socket.on('message:new', async (message: ChatMessage) => {
-      console.log('[ChatService] New message received:', message);
-
       // Save to local DB for persistence
       await this.saveMessageToLocal(message);
 
@@ -139,7 +135,6 @@ class ChatService {
 
     // Handle message sent confirmation
     this.socket.on('message:sent', async (message: ChatMessage) => {
-      console.log('[ChatService] Message sent confirmation:', message);
       await this.saveMessageToLocal(message);
       // Dispatch change event to refresh UI
       window.dispatchEvent(
@@ -151,7 +146,6 @@ class ChatService {
 
     // Handle typing indicators
     this.socket.on('typing:update', ({ userId, isTyping }: TypingPayload) => {
-      console.log('[ChatService] Typing update:', userId, isTyping);
       this.emitEvent('typing', { userId, isTyping });
     });
 
@@ -159,7 +153,6 @@ class ChatService {
     this.socket.on(
       'message:read',
       ({ conversationId, readBy }: { conversationId: string; readBy: string }) => {
-        console.log('[ChatService] Messages read:', conversationId, readBy);
         this.emitEvent('read', { conversationId, readBy });
 
         window.dispatchEvent(
@@ -172,13 +165,11 @@ class ChatService {
 
     // Handle user status updates
     this.socket.on('user:status', ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
-      console.log('[ChatService] User status:', userId, isOnline);
       this.emitEvent('userStatus', { userId, isOnline });
     });
 
     // Handle online users list
     this.socket.on('users:online', (userIds: string[]) => {
-      console.log('[ChatService] Online users:', userIds);
       this.emitEvent('usersOnline', userIds);
     });
   }
@@ -329,24 +320,33 @@ class ChatService {
   }
 
   async getMessageHistory(otherUserId: string): Promise<ChatMessage[]> {
-    return new Promise(async (resolve) => {
-      if (!this.socket || !this.userId) {
-        resolve(await this.getLocalMessages(otherUserId));
-        return;
-      }
+    // No socket — fall back to local DB immediately
+    if (!this.socket || !this.userId) {
+      return this.getLocalMessages(otherUserId);
+    }
 
-      this.socket.emit(
+    return new Promise<ChatMessage[]>((resolve) => {
+      let settled = false;
+
+      // Fallback: use local DB if the server doesn't reply within 2 s
+      const fallbackTimer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          void this.getLocalMessages(otherUserId).then(resolve);
+        }
+      }, 2000);
+
+      this.socket!.emit(
         'message:history',
         { userId: this.userId, otherUserId },
         (history: ChatMessage[]) => {
-          console.log('[ChatService] Got history from server:', history.length, 'messages');
-          resolve(history);
+          if (!settled) {
+            settled = true;
+            clearTimeout(fallbackTimer);
+            resolve(history);
+          }
         },
       );
-
-      setTimeout(async () => {
-        resolve(await this.getLocalMessages(otherUserId));
-      }, 2000);
     });
   }
 

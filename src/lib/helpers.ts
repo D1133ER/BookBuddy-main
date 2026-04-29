@@ -86,7 +86,7 @@ export const getInitials = (name: string): string => {
 /**
  * Debounce function
  */
-export const debounce = <T extends (...args: any[]) => any>(
+export const debounce = <T extends (...args: any[]) => void>(
   func: T,
   wait: number,
 ): ((...args: Parameters<T>) => void) => {
@@ -161,4 +161,14 @@ export const generateId = (): string => {
  */
 export const sleep = (ms: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+/**
+ * Extract a user-facing error message from an unknown caught value.
+ * Use in every `catch (err: unknown)` block instead of `(err as any).message`.
+ */
+export const getErrorMessage = (err: unknown, fallback = 'Please try again.'): string => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return fallback;
 };

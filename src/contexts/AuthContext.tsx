@@ -13,6 +13,18 @@ interface User {
   isAdmin?: boolean;
 }
 
+/** Raw shape of the user object stored in the mock DB session. */
+interface SessionUser {
+  id: string;
+  username: string;
+  display_name?: string;
+  email?: string;
+  avatar_url?: string;
+  location?: string;
+  bio?: string;
+  isAdmin?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
@@ -36,7 +48,7 @@ const persistLegacyAuthState = (user: User | null) => {
   localStorage.removeItem('auth_token');
 };
 
-const mapSessionUser = (sessionUser: any): User => ({
+const mapSessionUser = (sessionUser: SessionUser): User => ({
   id: sessionUser.id,
   username: sessionUser.username,
   displayName: sessionUser.display_name || sessionUser.username,

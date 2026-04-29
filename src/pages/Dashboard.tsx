@@ -21,7 +21,9 @@ import {
   useDashboardTransactions,
   useDashboardAllTransactions,
   useDashboardConversations,
+  useDashboardConversations,
 } from '@/hooks/useDashboard';
+import type { TransactionRow } from '@/services/types';
 
 type DashboardRecentTransaction = {
   id: string;
@@ -42,7 +44,7 @@ const formatStatus = (status: string): DashboardRecentTransaction['status'] => {
   return 'pending';
 };
 
-const buildMonthlyActivity = (transactions: any[], userId: string) => {
+const buildMonthlyActivity = (transactions: TransactionRow[], userId: string) => {
   const now = new Date();
   return Array.from({ length: 6 }).map((_, offset) => {
     const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - offset), 1);

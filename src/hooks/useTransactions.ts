@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getTransactions, requestBook, updateTransactionStatus } from '@/services';
+import type { TransactionRow } from '@/services/types';
 
 export { useToggleWishlistMutation } from './useBooks';
 
@@ -45,7 +46,7 @@ export const useUpdateTransactionStatusMutation = () => {
       await queryClient.cancelQueries({ queryKey: ['transactions'] });
       const previousTransactions = queryClient.getQueryData(['transactions']);
 
-      queryClient.setQueryData(['transactions'], (old: any[] = []) =>
+      queryClient.setQueryData<TransactionRow[]>(['transactions'], (old = []) =>
         old.map((t) => (t.id === vars.id ? { ...t, status: vars.status } : t)),
       );
 

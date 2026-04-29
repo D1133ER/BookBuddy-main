@@ -86,7 +86,8 @@ export const MOCK_DB_CHANGE_EVENT = 'bookbuddy:db-change';
 interface BookBuddyDB extends DBSchema {
   collections: {
     key: string;
-    value: any;
+    // IDB stores arbitrary serialisable data; narrowed at call-sites via typed getters
+    value: unknown;
   };
 }
 
@@ -174,7 +175,7 @@ class MockDB {
     const db = await this.dbPromise;
     return (await db.get('collections', 'session')) || null;
   }
-  public async setSession(data: any) {
+  public async setSession(data: Record<string, unknown> | null) {
     const db = await this.dbPromise;
     if (data) await db.put('collections', data, 'session');
     else await db.delete('collections', 'session');

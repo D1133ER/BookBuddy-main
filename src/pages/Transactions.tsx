@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
 import { DEFAULT_BOOK_COVER } from '@/lib/mockDbSeed';
 import { useUserTransactions, useUpdateTransactionStatusMutation } from '@/hooks/useTransactions';
+import { getErrorMessage } from '@/lib/helpers';
+import type { TransactionRow } from '@/services/types';
 
 type TransactionView = {
   id: string;
@@ -42,7 +44,10 @@ const normalizeStatus = (status: string): TransactionView['status'] => {
   return 'pending';
 };
 
-const toTransactionView = (transaction: any, currentUserId: string): TransactionView | null => {
+const toTransactionView = (
+  transaction: TransactionRow,
+  currentUserId: string,
+): TransactionView | null => {
   const isBorrower = transaction.borrower_id === currentUserId;
   const otherUser = isBorrower ? transaction.lender : transaction.borrower;
   const book = transaction.book;
@@ -88,7 +93,7 @@ const Transactions = () => {
   const transactions = useMemo(() => {
     if (!user?.id) return [];
     return rows
-      .map((transaction: any) => toTransactionView(transaction, user.id))
+      .map((transaction: TransactionRow) => toTransactionView(transaction, user.id))
       .filter((transaction): transaction is TransactionView => Boolean(transaction));
   }, [rows, user?.id]);
 
@@ -99,9 +104,9 @@ const Transactions = () => {
         description: 'The borrower has been notified and the loan is now active.',
       });
       setIsDetailOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Unable to approve request', {
-        description: error.message || 'Please try again.',
+        description: getErrorMessage(error, 'Please try again.'),
       });
     }
   };
@@ -113,9 +118,9 @@ const Transactions = () => {
         description: 'The requester has been notified.',
       });
       setIsDetailOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Unable to decline request', {
-        description: error.message || 'Please try again.',
+        description: getErrorMessage(error, 'Please try again.'),
       });
     }
   };
@@ -127,9 +132,9 @@ const Transactions = () => {
         description: 'The return has been recorded and the book is available again.',
       });
       setIsDetailOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Unable to complete transaction', {
-        description: error.message || 'Please try again.',
+        description: getErrorMessage(error, 'Please try again.'),
       });
     }
   };
