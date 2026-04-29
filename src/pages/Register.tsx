@@ -167,7 +167,7 @@ const Register = () => {
                   <Link to="/login">
                     <Button
                       variant="outline"
-                      className="w-full h-11 rounded-xl font-medium border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="w-full h-11 rounded-xl font-medium border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300"
                     >
                       Sign in to existing account
                     </Button>

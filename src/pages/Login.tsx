@@ -119,7 +119,7 @@ const Login = () => {
                     </Label>
                     <a
                       href="mailto:hello@bookbuddy.local?subject=BookBuddy%20sign-in%20help"
-                      className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                      className="text-sm font-medium text-primary hover:text-primary/60 transition-colors"
                     >
                       Need sign-in help?
                     </a>
@@ -164,7 +164,7 @@ const Login = () => {
                   <Link to="/register">
                     <Button
                       variant="outline"
-                      className="w-full h-11 rounded-xl font-medium border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="w-full h-11 rounded-xl font-medium border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300"
                     >
                       Create an account
                     </Button>
