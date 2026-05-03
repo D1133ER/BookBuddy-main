@@ -1,6 +1,6 @@
-import { memo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { memo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users } from 'lucide-react';
 
 interface UserDistributionChartProps {
   title?: string;
@@ -17,42 +17,42 @@ interface UserDistributionChartProps {
 
 const defaultChartData = [
   {
-    label: "Pending",
+    label: 'Pending',
     value: 1,
-    color: "fill-amber-500",
-    hoverColor: "fill-amber-600",
-    bgColor: "bg-amber-100",
-    textColor: "text-amber-700",
+    color: 'fill-amber-500',
+    hoverColor: 'fill-amber-600',
+    bgColor: 'bg-amber-100',
+    textColor: 'text-amber-700',
   },
   {
-    label: "Active",
+    label: 'Active',
     value: 1,
-    color: "fill-blue-500",
-    hoverColor: "fill-blue-600",
-    bgColor: "bg-blue-100",
-    textColor: "text-blue-700",
+    color: 'fill-blue-500',
+    hoverColor: 'fill-blue-600',
+    bgColor: 'bg-blue-100',
+    textColor: 'text-blue-700',
   },
   {
-    label: "Completed",
+    label: 'Completed',
     value: 1,
-    color: "fill-green-500",
-    hoverColor: "fill-green-600",
-    bgColor: "bg-green-100",
-    textColor: "text-green-700",
+    color: 'fill-green-500',
+    hoverColor: 'fill-green-600',
+    bgColor: 'bg-green-100',
+    textColor: 'text-green-700',
   },
   {
-    label: "Cancelled",
+    label: 'Cancelled',
     value: 0,
-    color: "fill-rose-500",
-    hoverColor: "fill-rose-600",
-    bgColor: "bg-rose-100",
-    textColor: "text-rose-700",
+    color: 'fill-rose-500',
+    hoverColor: 'fill-rose-600',
+    bgColor: 'bg-rose-100',
+    textColor: 'text-rose-700',
   },
 ];
 
 const UserDistributionChart = ({
-  title = "Request Breakdown",
-  totalLabel = "Requests",
+  title = 'Request Breakdown',
+  totalLabel = 'Requests',
   data = [],
 }: UserDistributionChartProps) => {
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
@@ -71,11 +71,14 @@ const UserDistributionChart = ({
       <CardContent>
         <div className="flex justify-center mb-6">
           <div className="relative w-48 h-48">
-            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md" role="img" aria-label={`${title}: ${chartData.map((d) => `${d.label} ${d.value}`).join(", ")}`}>
+            <svg
+              viewBox="0 0 100 100"
+              className="w-full h-full drop-shadow-md"
+              role="img"
+              aria-label={`${title}: ${chartData.map((d) => `${d.label} ${d.value}`).join(', ')}`}
+            >
               {chartData.reduce((jsx, item, index, array) => {
-                const previousTotal = array
-                  .slice(0, index)
-                  .reduce((sum, i) => sum + i.value, 0);
+                const previousTotal = array.slice(0, index).reduce((sum, i) => sum + i.value, 0);
                 const startAngle = (previousTotal / total) * 360;
                 const endAngle = ((previousTotal + item.value) / total) * 360;
 
@@ -84,14 +87,14 @@ const UserDistributionChart = ({
                 const x2 = 50 + 40 * Math.cos((endAngle * Math.PI) / 180);
                 const y2 = 50 + 40 * Math.sin((endAngle * Math.PI) / 180);
 
-                const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+                const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
 
                 const pathData = [
                   `M 50 50`,
                   `L ${x1} ${y1}`,
                   `A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2}`,
                   `Z`,
-                ].join(" ");
+                ].join(' ');
 
                 // Calculate midpoint angle for label positioning
                 const midAngle = (startAngle + endAngle) / 2;
@@ -121,12 +124,7 @@ const UserDistributionChart = ({
                   </g>,
                 ];
               }, [] as React.ReactElement[])}
-              <circle
-                cx="50"
-                cy="50"
-                r="25"
-                className="fill-white drop-shadow-sm"
-              ></circle>
+              <circle cx="50" cy="50" r="25" className="fill-white drop-shadow-sm"></circle>
               <text
                 x="50"
                 y="50"
@@ -144,16 +142,16 @@ const UserDistributionChart = ({
           {chartData.map((item, index) => (
             <div
               key={index}
-              className={`flex items-center p-2 rounded-lg transition-colors duration-200 ${hoveredSegment === index ? item.bgColor : "hover:bg-gray-50"}`}
+              className={`flex items-center p-2 rounded-lg transition-colors duration-200 ${hoveredSegment === index ? item.bgColor : 'hover:bg-gray-50'}`}
               onMouseEnter={() => setHoveredSegment(index)}
               onMouseLeave={() => setHoveredSegment(null)}
             >
               <div
-                className={`w-4 h-4 rounded-full ${item.color.replace("fill-", "bg-")} mr-3 shadow-sm`}
+                className={`w-4 h-4 rounded-full ${item.color.replace('fill-', 'bg-')} mr-3 shadow-sm`}
               ></div>
               <div>
                 <p
-                  className={`text-sm font-medium ${hoveredSegment === index ? item.textColor : ""}`}
+                  className={`text-sm font-medium ${hoveredSegment === index ? item.textColor : ''}`}
                 >
                   {item.label}
                 </p>

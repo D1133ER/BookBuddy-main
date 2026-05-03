@@ -1,4 +1,3 @@
-
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,16 +6,17 @@ interface ProtectedRouteProps {
   requireAdmin?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requireAdmin = false 
-}) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
   const { user, isLoggedIn, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
     return (
-      <main role="main" aria-busy="true" className="flex h-screen w-full items-center justify-center bg-white">
+      <main
+        role="main"
+        aria-busy="true"
+        className="flex h-screen w-full items-center justify-center bg-white"
+      >
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
           <p className="font-medium text-gray-600">Verifying authentication...</p>

@@ -1,5 +1,5 @@
-import { Book } from '@/types/book';
-import { User } from '@/lib/mockDb';
+import type { Book } from '@/types/book';
+import type { User } from '@/lib/mockDb';
 
 /** A book enriched with its owner's profile. */
 export interface BookWithOwner extends Book {

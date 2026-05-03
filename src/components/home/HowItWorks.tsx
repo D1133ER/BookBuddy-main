@@ -17,7 +17,7 @@ const StepCard = ({
     <motion.div whileHover={{ y: -8 }} transition={{ duration: 0.3 }} className="h-full">
       <Card className="h-full bg-white shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100">
         <CardContent className="flex flex-col items-center text-center p-4 sm:p-6">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3 sm:mb-4">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-3 sm:mb-4">
             {icon}
           </div>
           <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">{title}</h3>

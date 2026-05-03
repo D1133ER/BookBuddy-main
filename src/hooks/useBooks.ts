@@ -10,7 +10,7 @@ import {
   getUserWishlist,
   toggleWishlistItem,
 } from '@/services';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 
 export const useAvailableBooks = (searchQuery?: string) => {
   return useQuery({
@@ -79,7 +79,9 @@ export const useDeleteBookMutation = () => {
     },
     onError: (_err, _vars, context) => {
       queryClient.setQueryData(['books', 'user'], context?.previousBooks);
-      toast.error('Failed to delete book', { description: 'Please try again.' });
+      toast.error('Failed to delete book', {
+        description: 'Please try again.',
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });

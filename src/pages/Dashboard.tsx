@@ -21,8 +21,9 @@ import {
   useDashboardTransactions,
   useDashboardAllTransactions,
   useDashboardConversations,
-  useDashboardConversations,
+  useDashboardSmartSwaps,
 } from '@/hooks/useDashboard';
+import BookCard from '@/components/books/BookCard';
 import type { TransactionRow } from '@/services/types';
 
 type DashboardRecentTransaction = {
@@ -73,6 +74,9 @@ const Dashboard = () => {
 
   const { books, isLoading: isLoadingCatalog } = useCatalogData();
   const { data: stats, isLoading: isLoadingStats } = useDashboardStats(user?.id || '');
+  const { data: smartSwaps = [], isLoading: isLoadingSwaps } = useDashboardSmartSwaps(
+    user?.id || '',
+  );
   const { data: userTransactions = [], isLoading: isLoadingUserTx } = useDashboardTransactions(
     user?.id || '',
   );
@@ -84,6 +88,7 @@ const Dashboard = () => {
   const isLoading =
     isLoadingCatalog ||
     isLoadingStats ||
+    isLoadingSwaps ||
     isLoadingUserTx ||
     isLoadingAllTx ||
     isLoadingConversations;
@@ -256,6 +261,29 @@ const Dashboard = () => {
                     activeExchangeCount={snapshot.activeExchangeCount}
                   />
                 </motion.div>
+
+                {/* Smart Swaps Section */}
+                {smartSwaps.length > 0 && (
+                  <motion.div variants={itemVariants} className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-800">Perfect Match Swaps</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {smartSwaps.map((book) => (
+                        <BookCard
+                          key={book.id}
+                          id={book.id}
+                          title={book.title}
+                          author={book.author}
+                          coverImage={book.coverImage}
+                          condition={book.condition}
+                          available={book.available}
+                          genre={book.genre}
+                          rating={book.rating}
+                          publicationDate={book.publicationDate}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
 
                 <motion.div
                   variants={itemVariants}

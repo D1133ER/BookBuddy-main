@@ -1,11 +1,10 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { motion, useReducedMotion } from "framer-motion";
-import { createFadeUpItem, createHoverLift, createStaggerContainer } from "@/lib/motion";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { motion, useReducedMotion } from 'framer-motion';
+import { createFadeUpItem, createHoverLift, createStaggerContainer } from '@/lib/motion';
 
 interface Transaction {
   id: string;
@@ -14,8 +13,8 @@ interface Transaction {
     avatar?: string;
   };
   book: string;
-  type: "borrow" | "lend" | "return";
-  status: "pending" | "active" | "completed" | "cancelled";
+  type: 'borrow' | 'lend' | 'return';
+  status: 'pending' | 'active' | 'completed' | 'cancelled';
   date: string;
 }
 
@@ -25,50 +24,28 @@ interface RecentTransactionsProps {
 }
 
 const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  active: "bg-blue-100 text-blue-800 border-blue-200",
-  completed: "bg-green-100 text-green-800 border-green-200",
-  cancelled: "bg-red-100 text-red-800 border-red-200",
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  active: 'bg-blue-100 text-blue-800 border-blue-200',
+  completed: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
 };
 
 const typeIcons = {
   borrow: (
-    <svg
-      className="h-3 w-3 text-blue-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 5l7 7-7 7"
-      />
+    <svg className="h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <title>Borrow</title>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
   ),
   lend: (
-    <svg
-      className="h-3 w-3 text-purple-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 19l-7-7 7-7"
-      />
+    <svg className="h-3 w-3 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <title>Lend</title>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
     </svg>
   ),
   return: (
-    <svg
-      className="h-3 w-3 text-green-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
+    <svg className="h-3 w-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <title>Return</title>
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -80,15 +57,12 @@ const typeIcons = {
 };
 
 const typeLabels = {
-  borrow: "Borrowed",
-  lend: "Lent",
-  return: "Returned",
+  borrow: 'Borrowed',
+  lend: 'Lent',
+  return: 'Returned',
 };
 
-const RecentTransactions = ({
-  transactions = [],
-  onViewAll,
-}: RecentTransactionsProps) => {
+const RecentTransactions = ({ transactions = [], onViewAll }: RecentTransactionsProps) => {
   const shouldReduceMotion = useReducedMotion() ?? false;
   const containerVariants = createStaggerContainer(shouldReduceMotion, 0.08, 0.04);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 18);
@@ -118,60 +92,59 @@ const RecentTransactions = ({
             Your latest requests and returns will appear here once you start borrowing or lending.
           </div>
         ) : (
-        <motion.div
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={containerVariants}
-          className="space-y-3"
-        >
-          {transactions.map((transaction) => (
-            <motion.div
-              key={transaction.id}
-              variants={itemVariants}
-              whileHover={createHoverLift(shouldReduceMotion, -3)}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/40"
-            >
-              <div className="flex items-center space-x-3">
-                <Avatar className="border-2 border-white shadow-sm">
-                  <AvatarImage src={transaction.user.avatar || undefined} alt={transaction.user.name} />
-                  <AvatarFallback className="bg-purple-100 text-purple-700">
-                    {transaction.user.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center">
-                    <p className="font-medium">{transaction.user.name}</p>
-                    <span className="mx-2 text-muted-foreground">
-                      {typeIcons[transaction.type]}
-                    </span>
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={containerVariants}
+            className="space-y-3"
+          >
+            {transactions.map((transaction) => (
+              <motion.div
+                key={transaction.id}
+                variants={itemVariants}
+                whileHover={createHoverLift(shouldReduceMotion, -3)}
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-border/40"
+              >
+                <div className="flex items-center space-x-3">
+                  <Avatar className="border-2 border-white shadow-sm">
+                    <AvatarImage
+                      src={transaction.user.avatar || undefined}
+                      alt={transaction.user.name}
+                    />
+                    <AvatarFallback className="bg-purple-100 text-purple-700">
+                      {transaction.user.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center">
+                      <p className="font-medium">{transaction.user.name}</p>
+                      <span className="mx-2 text-muted-foreground">
+                        {typeIcons[transaction.type]}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground flex items-center">
+                      <span className="font-medium text-primary/80">
+                        {typeLabels[transaction.type]}
+                      </span>
+                      <span className="mx-1">•</span>"{transaction.book}"
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground flex items-center">
-                    <span className="font-medium text-primary/80">
-                      {typeLabels[transaction.type]}
-                    </span>
-                    <span className="mx-1">•</span>"{transaction.book}"
-                  </p>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Badge
-                  variant="outline"
-                  className={statusColors[transaction.status]}
-                >
-                  {transaction.status.charAt(0).toUpperCase() +
-                    transaction.status.slice(1)}
-                </Badge>
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {new Date(transaction.date).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+                <div className="flex items-center space-x-3">
+                  <Badge variant="outline" className={statusColors[transaction.status]}>
+                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {new Date(transaction.date).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         )}
       </CardContent>
     </Card>

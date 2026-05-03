@@ -1,12 +1,10 @@
-import { Variants } from "framer-motion";
+import type { Variants } from 'framer-motion';
 
 export const motionEase = [0.22, 1, 0.36, 1] as const;
 export const motionExitEase = [0.4, 0, 1, 1] as const;
 
 export const createPageVariants = (reducedMotion: boolean): Variants => ({
-  initial: reducedMotion
-    ? { opacity: 0 }
-    : { opacity: 0, y: 18 },
+  initial: reducedMotion ? { opacity: 0 } : { opacity: 0, y: 18 },
   animate: reducedMotion
     ? {
         opacity: 1,
@@ -48,10 +46,7 @@ export const createStaggerContainer = (
   },
 });
 
-export const createFadeUpItem = (
-  reducedMotion: boolean,
-  distance = 22,
-): Variants => ({
+export const createFadeUpItem = (reducedMotion: boolean, distance = 22): Variants => ({
   hidden: reducedMotion ? { opacity: 0 } : { opacity: 0, y: distance },
   show: reducedMotion
     ? {

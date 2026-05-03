@@ -4,12 +4,13 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BookCard from '@/components/books/BookCard';
+// import BookCardList from '@/components/books/BookCardList';
 import BookDetail from '@/components/books/BookDetail';
 import PageTransition from '@/components/layout/PageTransition';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X, RotateCcw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -39,7 +40,7 @@ const Catalog = () => {
   const itemVariants = createFadeUpItem(shouldReduceMotion, 20);
 
   const { books, error, isLoading } = useCatalogData();
-  const { filteredBooks, filters, setFilters } = useAdvancedCatalogSearch(books);
+  const { filteredBooks, filters, setFilters, totalResults } = useAdvancedCatalogSearch(books);
   const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,6 +50,38 @@ const Catalog = () => {
 
   const [columns, setColumns] = useState(4);
   const [containerWidth, setContainerWidth] = useState(1200);
+
+  // Initialize filters from URL params
+  useEffect(() => {
+    const availableParam = searchParams.get('available');
+    const genreParam = searchParams.get('genre');
+    const searchParam = searchParams.get('q');
+
+    const initialFilters: typeof filters = { ...filters };
+
+    if (availableParam === 'true') {
+      initialFilters.availability = true;
+    }
+    if (genreParam) {
+      initialFilters.genres = [genreParam];
+    }
+    if (searchParam) {
+      initialFilters.searchTerm = searchParam;
+    }
+
+    if (availableParam || genreParam || searchParam) {
+      setFilters(initialFilters);
+    }
+  }, []);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.availability) params.set('available', 'true');
+    if (filters.genres.length > 0) params.set('genre', filters.genres[0]);
+    if (filters.searchTerm) params.set('q', filters.searchTerm);
+    setSearchParams(params, { replace: true });
+  }, [filters, setSearchParams]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -135,15 +168,90 @@ const Catalog = () => {
             className="space-y-6"
           >
             <motion.div variants={itemVariants} className="mb-2">
-              <h1 className="text-3xl font-bold mb-2">Book Catalog</h1>
-              <p className="text-gray-600">
-                Browse a curated local shelf, filter what is currently available, and send a tracked
-                borrowing request in one step.
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold mb-1">Book Catalog</h1>
+                  <p className="text-gray-600">
+                    {totalResults} {totalResults === 1 ? 'book' : 'books'} available
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoading}
+                    className="border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                  >
+                    <RotateCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
               {error && <p className="mt-2 text-sm text-amber-700">{error}</p>}
             </motion.div>
 
             <motion.div variants={itemVariants} className="bg-white p-4 rounded-lg shadow-sm">
+              {/* Active filters display */}
+              {(filters.searchTerm ||
+                filters.availability ||
+                filters.genres.length > 0 ||
+                filters.condition) && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {filters.searchTerm && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
+                      Search: "{filters.searchTerm}"
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setFilters({ ...filters, searchTerm: '' })}
+                      />
+                    </span>
+                  )}
+                  {filters.availability && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                      Available only
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setFilters({ ...filters, availability: null })}
+                      />
+                    </span>
+                  )}
+                  {filters.genres.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                      {filters.genres[0]}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setFilters({ ...filters, genres: [] })}
+                      />
+                    </span>
+                  )}
+                  {filters.condition && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+                      Condition: {filters.condition}+
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => setFilters({ ...filters, condition: null })}
+                      />
+                    </span>
+                  )}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-sm h-auto p-0 text-indigo-600 hover:text-indigo-800"
+                    onClick={() =>
+                      setFilters({
+                        searchTerm: '',
+                        genres: [],
+                        availability: null,
+                        condition: null,
+                        sortBy: 'title',
+                      })
+                    }
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              )}
+
               <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="relative flex-grow">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -161,9 +269,12 @@ const Catalog = () => {
                 >
                   <Button
                     variant="outline"
-                    className={filters.availability ? 'bg-primary text-white' : ''}
+                    className={`border-gray-300 hover:bg-gray-100 hover:border-gray-400 ${filters.availability ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:border-indigo-700' : ''}`}
                     onClick={() =>
-                      setFilters({ ...filters, availability: filters.availability ? null : true })
+                      setFilters({
+                        ...filters,
+                        availability: filters.availability ? null : true,
+                      })
                     }
                   >
                     <Filter className="h-4 w-4 mr-2" />
@@ -177,7 +288,10 @@ const Catalog = () => {
                   <Select
                     value={filters.sortBy}
                     onValueChange={(val) =>
-                      setFilters({ ...filters, sortBy: val as typeof filters.sortBy })
+                      setFilters({
+                        ...filters,
+                        sortBy: val as typeof filters.sortBy,
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -196,7 +310,10 @@ const Catalog = () => {
                   <Select
                     value={filters.condition ? filters.condition.toString() : 'all'}
                     onValueChange={(val) =>
-                      setFilters({ ...filters, condition: val === 'all' ? null : parseInt(val) })
+                      setFilters({
+                        ...filters,
+                        condition: val === 'all' ? null : parseInt(val),
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -215,7 +332,10 @@ const Catalog = () => {
                   <Select
                     value={filters.genres.length > 0 ? filters.genres[0] : 'all'}
                     onValueChange={(val) =>
-                      setFilters({ ...filters, genres: val === 'all' ? [] : [val] })
+                      setFilters({
+                        ...filters,
+                        genres: val === 'all' ? [] : [val],
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -244,7 +364,7 @@ const Catalog = () => {
               >
                 <p className="text-gray-500 text-lg">Refreshing live book metadata...</p>
               </motion.div>
-            ) : filteredBooks.length === 0 ? (
+            ) : !filteredBooks || filteredBooks.length === 0 ? (
               <motion.div
                 variants={itemVariants}
                 className="text-center py-12 bg-white rounded-lg shadow-sm"
@@ -254,6 +374,7 @@ const Catalog = () => {
                 </p>
                 <Button
                   variant="link"
+                  className="text-indigo-600 hover:text-indigo-800"
                   onClick={() => {
                     setFilters({
                       searchTerm: '',
@@ -267,7 +388,7 @@ const Catalog = () => {
                   Clear filters
                 </Button>
               </motion.div>
-            ) : (
+            ) : filteredBooks && filteredBooks.length > 0 ? (
               <motion.div variants={containerVariants} className="w-full flex justify-center">
                 <Grid
                   columnCount={columns}
@@ -284,7 +405,7 @@ const Catalog = () => {
                     const index = rowIndex * columns + columnIndex;
                     const book = filteredBooks[index];
 
-                    if (!book) return null;
+                    if (!book || !book.title) return null;
 
                     return (
                       <div style={{ ...style, padding: '12px' }}>
@@ -306,7 +427,7 @@ const Catalog = () => {
                             />
                             <Button
                               variant="ghost"
-                              className="w-full"
+                              className="w-full text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
                               onClick={() => updateSearchParams({ book: book.id })}
                             >
                               View Details
@@ -317,6 +438,30 @@ const Catalog = () => {
                     );
                   }}
                 />
+              </motion.div>
+            ) : (
+              <motion.div
+                variants={itemVariants}
+                className="text-center py-12 bg-white rounded-lg shadow-sm"
+              >
+                <p className="text-gray-500 text-lg">
+                  No books found matching your search criteria.
+                </p>
+                <Button
+                  variant="link"
+                  className="text-indigo-600 hover:text-indigo-800"
+                  onClick={() => {
+                    setFilters({
+                      searchTerm: '',
+                      genres: [],
+                      availability: null,
+                      condition: null,
+                      sortBy: 'title',
+                    });
+                  }}
+                >
+                  Clear filters
+                </Button>
               </motion.div>
             )}
           </motion.div>

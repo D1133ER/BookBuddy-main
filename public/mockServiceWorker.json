@@ -1,1 +1,4 @@
-{ "$schema": "https://json.schemastore.org/msw", "mockServiceWorkerUrl": "/mockServiceWorker.js" }
+{
+  "$schema": "https://json.schemastore.org/msw",
+  "mockServiceWorkerUrl": "/mockServiceWorker.js"
+}

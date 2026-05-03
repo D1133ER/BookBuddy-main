@@ -1,6 +1,6 @@
-import { db, User } from '@/lib/mockDb';
+import { db, type User } from '@/lib/mockDb';
 import { DEFAULT_BOOK_COVER, mapMockBookToAppBook } from '@/lib/mockDbSeed';
-import { Book as AppBook } from '@/types/book';
+import type { Book as AppBook } from '@/types/book';
 
 // Note: Book type from mockDb is slightly different from AppBook, we map it.
 type MockBook = Awaited<ReturnType<typeof db.getBooks>>[0];
@@ -91,6 +91,15 @@ export const getBookById = async (id: string): Promise<AppBook & { owner: User |
   };
 };
 
+export const getUserWishlist = async (userId: string) => {
+  const wishlist = (await db.getWishlist()) || [];
+  const wishlistItems = wishlist.filter((item) => item.user_id === userId);
+  const bookIds = wishlistItems.map((item) => item.book_id);
+  const books = await db.getBooks();
+  const userWishlistBooks = books.filter((book) => bookIds.includes(book.id));
+  return userWishlistBooks.map(mapMockBookToAppBook);
+};
+
 export const toggleWishlistItem = async (userId: string, bookId: string) => {
   const wishlist = (await db.getWishlist()) || [];
   const existingIndex = wishlist.findIndex(
@@ -114,11 +123,15 @@ export const toggleWishlistItem = async (userId: string, bookId: string) => {
   return wishlist;
 };
 
-export const getUserWishlist = async (userId: string) => {
-  const wishlist = (await db.getWishlist()) || [];
-  const wishlistItems = wishlist.filter((item) => item.user_id === userId);
-  const bookIds = wishlistItems.map((item) => item.book_id);
-  const books = await db.getBooks();
-  const userWishlistBooks = books.filter((book) => bookIds.includes(book.id));
-  return userWishlistBooks.map(mapMockBookToAppBook);
+export const getSmartSwapMatches = async (userId: string): Promise<AppBook[]> => {
+  const wishlist = await getUserWishlist(userId);
+  if (wishlist.length === 0) return [];
+
+  // Find books that the user wants, are available, and owned by others
+  const allAvailableBooks = await getAvailableBooks();
+  const matches = allAvailableBooks.filter((book: AppBook) =>
+    wishlist.some((wish: AppBook) => wish.id === book.id),
+  );
+
+  return matches;
 };

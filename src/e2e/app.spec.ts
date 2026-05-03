@@ -53,6 +53,8 @@ test.describe('Navigation Flow', () => {
   test('command palette opens with keyboard shortcut', async ({ page }) => {
     await page.goto('/');
     await page.keyboard.press('Meta+K');
-    await expect(page.getByPlaceholder(/search/i)).toBeVisible({ timeout: 3000 });
+    await expect(page.getByPlaceholder(/search/i)).toBeVisible({
+      timeout: 3000,
+    });
   });
 });

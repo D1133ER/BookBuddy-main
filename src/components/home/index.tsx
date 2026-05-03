@@ -5,7 +5,7 @@ import PublicNavbar from '../layout/PublicNavbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAvailableBooks } from '@/hooks/useBooks';
 import { useRequestBookMutation } from '@/hooks/useTransactions';
-import { trackEvent } from '@/lib/analytics';
+// import { trackEvent } from '@/lib/analytics';
 import { getErrorMessage } from '@/lib/helpers';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -46,7 +46,10 @@ const Home = () => {
     const target = document.getElementById(location.hash.slice(1));
     if (target) {
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+      target.scrollIntoView({
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
     }
   }, [location.hash]);
 
@@ -86,7 +89,11 @@ const Home = () => {
       title: 'List Books',
       desc: 'Share your collection with neighbors',
     },
-    { icon: <Users className="w-6 h-6" />, title: 'Connect', desc: 'Meet fellow book lovers' },
+    {
+      icon: <Users className="w-6 h-6" />,
+      title: 'Connect',
+      desc: 'Meet fellow book lovers',
+    },
     {
       icon: <Heart className="w-6 h-6" />,
       title: 'Build Trust',
@@ -95,8 +102,16 @@ const Home = () => {
   ];
 
   const testimonials = [
-    { name: 'Sarah M.', text: 'Found amazing books from neighbors!', rating: 5 },
-    { name: 'James L.', text: 'My bookshelf has never been fuller.', rating: 5 },
+    {
+      name: 'Sarah M.',
+      text: 'Found amazing books from neighbors!',
+      rating: 5,
+    },
+    {
+      name: 'James L.',
+      text: 'My bookshelf has never been fuller.',
+      rating: 5,
+    },
     { name: 'Emma K.', text: 'Love the pickup system.', rating: 5 },
   ];
 

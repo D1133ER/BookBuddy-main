@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { chatService, ChatMessage, ChatConversation } from '@/services';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { chatService, type ChatMessage, type ChatConversation } from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { MOCK_DB_CHANGE_EVENT } from '@/lib/mockDb';
 
@@ -85,7 +85,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         }
 
         case 'typing': {
-          const { userId, isTyping } = event.payload as { userId: string; isTyping: boolean };
+          const { userId, isTyping } = event.payload as {
+            userId: string;
+            isTyping: boolean;
+          };
           if (userId !== user.id) {
             setTypingUsers((prev) => {
               const next = new Map(prev);

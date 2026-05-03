@@ -1,11 +1,10 @@
-
-import { motion, useReducedMotion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Book } from "@/types/book";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CalendarDays, Building2, Hash, Star } from "lucide-react";
-import { createFadeUpItem, createStaggerContainer } from "@/lib/motion";
+import { motion, useReducedMotion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import type { Book } from '@/types/book';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CalendarDays, Building2, Hash, Star } from 'lucide-react';
+import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
 
 interface BookDetailProps {
   book: Book;
@@ -22,15 +21,15 @@ interface BookDetailProps {
 const BookDetail = ({
   book,
   owner = {
-    id: "user-1",
-    name: "Book Owner",
-    avatar: "owner",
+    id: 'user-1',
+    name: 'Book Owner',
+    avatar: 'owner',
   },
   onRequestBook,
   onClose,
   isOwner = false,
 }: BookDetailProps) => {
-  const conditionLabels = ["Poor", "Fair", "Good", "Very Good", "Like New"];
+  const conditionLabels = ['Poor', 'Fair', 'Good', 'Very Good', 'Like New'];
   const shouldReduceMotion = useReducedMotion() ?? false;
   const containerVariants = createStaggerContainer(shouldReduceMotion, 0.08, 0.04);
   const itemVariants = createFadeUpItem(shouldReduceMotion, 18);
@@ -54,8 +53,8 @@ const BookDetail = ({
             src={book.coverImage}
             alt={book.title}
             className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       </motion.div>
@@ -67,37 +66,37 @@ const BookDetail = ({
         </motion.div>
 
         <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className="bg-blue-50 text-blue-700 border-blue-200"
-          >
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
             {conditionLabels[book.condition - 1]}
           </Badge>
           <Badge
             variant="outline"
             className={
               book.available
-                ? "bg-green-50 text-green-700 border-green-200"
-                : "bg-red-50 text-red-700 border-red-200"
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-red-50 text-red-700 border-red-200'
             }
           >
-            {book.available ? "Available" : "Unavailable"}
+            {book.available ? 'Available' : 'Unavailable'}
           </Badge>
           {book.genre && (
             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
               {book.genre}
             </Badge>
           )}
-          {typeof book.rating === "number" && (
+          {typeof book.rating === 'number' && (
             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
               <Star className="mr-1 h-3.5 w-3.5 fill-current" />
               {book.rating.toFixed(1)}
-              {typeof book.ratingsCount === "number" ? ` (${book.ratingsCount})` : ""}
+              {typeof book.ratingsCount === 'number' ? ` (${book.ratingsCount})` : ''}
             </Badge>
           )}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border bg-slate-50/70 p-4">
+        <motion.div
+          variants={itemVariants}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border bg-slate-50/70 p-4"
+        >
           {book.isbn && (
             <div className="flex items-start gap-2 text-sm">
               <Hash className="mt-0.5 h-4 w-4 text-slate-500" />
@@ -140,7 +139,7 @@ const BookDetail = ({
           <motion.div variants={itemVariants} className="pt-2">
             <h3 className="text-sm font-medium mb-1">Description</h3>
             <p className="text-sm text-muted-foreground">
-              {book.description || "No description available."}
+              {book.description || 'No description available.'}
             </p>
           </motion.div>
         )}
@@ -150,9 +149,7 @@ const BookDetail = ({
           <div className="flex items-center space-x-3">
             <Avatar>
               <AvatarImage src={owner.avatar || undefined} alt={owner.name} />
-              <AvatarFallback>
-                {owner.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback>{owner.name.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
               <p className="font-medium">{owner.name}</p>
@@ -169,9 +166,7 @@ const BookDetail = ({
               Close
             </Button>
           )}
-          {!isOwner && book.available && (
-            <Button onClick={handleRequestBook}>Request Book</Button>
-          )}
+          {!isOwner && book.available && <Button onClick={handleRequestBook}>Request Book</Button>}
           {isOwner && <Button variant="outline">Edit Book</Button>}
         </motion.div>
       </div>

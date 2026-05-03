@@ -1,8 +1,8 @@
-import { memo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { motion, useReducedMotion } from "framer-motion";
-import { createHoverLift } from "@/lib/motion";
+import { memo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { motion, useReducedMotion } from 'framer-motion';
+import { createHoverLift } from '@/lib/motion';
 
 interface StatCardProps {
   title: string;
@@ -24,7 +24,7 @@ const StatCard = ({
   description,
   trend,
   className,
-  accentColor = "bg-primary/10",
+  accentColor = 'bg-primary/10',
 }: StatCardProps) => {
   const shouldReduceMotion = useReducedMotion() ?? false;
 
@@ -32,29 +32,23 @@ const StatCard = ({
     <motion.div whileHover={createHoverLift(shouldReduceMotion, -5)}>
       <Card
         className={cn(
-          "overflow-hidden hover:shadow-md transition-all border-t-4",
-          accentColor.replace("/10", "/80").replace("bg-", "border-"),
+          'overflow-hidden hover:shadow-md transition-all border-t-4',
+          accentColor.replace('/10', '/80').replace('bg-', 'border-'),
           className,
         )}
       >
         <CardContent className="p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">
-                {title}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
               <h3 className="text-2xl font-bold tracking-tight">{value}</h3>
-              {description && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {description}
-                </p>
-              )}
+              {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
               {trend && (
                 <div className="flex items-center mt-2">
                   <span
                     className={cn(
-                      "text-xs font-medium flex items-center",
-                      trend.isPositive ? "text-green-500" : "text-red-500",
+                      'text-xs font-medium flex items-center',
+                      trend.isPositive ? 'text-green-500' : 'text-red-500',
                     )}
                   >
                     {trend.isPositive ? (
@@ -86,13 +80,11 @@ const StatCard = ({
                     )}
                     {Math.abs(trend.value)}%
                   </span>
-                  <span className="text-xs text-muted-foreground ml-1">
-                    since last month
-                  </span>
+                  <span className="text-xs text-muted-foreground ml-1">since last month</span>
                 </div>
               )}
             </div>
-            <div className={cn("p-3 rounded-full", accentColor)}>{icon}</div>
+            <div className={cn('p-3 rounded-full', accentColor)}>{icon}</div>
           </div>
         </CardContent>
       </Card>

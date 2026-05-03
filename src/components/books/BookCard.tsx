@@ -1,10 +1,9 @@
-
-import { memo, useState } from "react";
-import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Star, BookOpen, CalendarDays, Heart } from "lucide-react";
-import { DEFAULT_BOOK_COVER } from "@/lib/mockDbSeed";
+import { memo, useState } from 'react';
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Star, BookOpen, CalendarDays, Heart } from 'lucide-react';
+import { DEFAULT_BOOK_COVER } from '@/lib/mockDbSeed';
 
 interface BookCardProps {
   id?: string;
@@ -42,26 +41,26 @@ const BookCard = ({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  const bookId = id ?? "book-placeholder";
-  const bookTitle = title ?? "Community Pick";
-  const bookAuthor = author ?? "Unknown Author";
+  const bookId = id ?? 'book-placeholder';
+  const bookTitle = title ?? 'Community Pick';
+  const bookAuthor = author ?? 'Unknown Author';
   const bookCoverImage = coverImage ?? DEFAULT_BOOK_COVER;
   const bookCondition = condition ?? 4;
   const isAvailable = available ?? true;
   const bookGenre = genre;
   const bookRating = rating;
   const bookPublicationDate = publicationDate;
-  const primaryGenre = bookGenre?.split("/")[0]?.trim();
-  const publicationYear = bookPublicationDate?.split("-")[0];
+  const primaryGenre = bookGenre?.split('/')[0]?.trim();
+  const publicationYear = bookPublicationDate?.split('-')[0];
   const actionLabel = isOwner
     ? isAvailable
-      ? "Pause Lending"
-      : "Make Available"
+      ? 'Pause Lending'
+      : 'Make Available'
     : isAvailable
-      ? "Request Book"
+      ? 'Request Book'
       : borrowed
-        ? "Currently Borrowed"
-        : "Not Available";
+        ? 'Currently Borrowed'
+        : 'Not Available';
   const actionDisabled = isOwner ? false : !isAvailable;
 
   const renderConditionStars = () => {
@@ -69,9 +68,11 @@ const BookCard = ({
       <div className="flex items-center gap-1">
         {Array.from({ length: 5 }).map((_, index) => (
           <Star
-            key={index}
+            key={`star-${bookId}-${index}`}
             size={14}
-            className={`${index < bookCondition ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`}
+            className={`${
+              index < bookCondition ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+            }`}
           />
         ))}
       </div>
@@ -93,11 +94,12 @@ const BookCard = ({
           {onToggleWishlist && (
             <div className="absolute top-3 left-3 z-10">
               <button
+                type="button"
                 onClick={handleToggleWishlist}
                 className="p-1.5 rounded-full bg-white/90 hover:bg-white text-gray-500 hover:text-red-500 transition-colors shadow-sm"
-                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
               >
-                <Heart className={`h-4 w-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+                <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
               </button>
             </div>
           )}
@@ -108,7 +110,7 @@ const BookCard = ({
             src={error ? DEFAULT_BOOK_COVER : bookCoverImage}
             alt={bookTitle}
             className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-              loaded ? "opacity-100" : "opacity-0"
+              loaded ? 'opacity-100' : 'opacity-0'
             }`}
             loading="lazy"
             decoding="async"
@@ -120,9 +122,9 @@ const BookCard = ({
           />
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <Badge
-            className={`absolute top-3 right-3 shadow-md ${isAvailable ? "bg-green-500/90 hover:bg-green-600/90" : "bg-red-500/90 hover:bg-red-600/90"}`}
+            className={`absolute top-3 right-3 shadow-md ${isAvailable ? 'bg-green-500/90 hover:bg-green-600/90' : 'bg-red-500/90 hover:bg-red-600/90'}`}
           >
-            {isAvailable ? "Available" : "Unavailable"}
+            {isAvailable ? 'Available' : 'Unavailable'}
           </Badge>
         </div>
 
@@ -134,7 +136,7 @@ const BookCard = ({
               </h3>
               <p className="text-sm text-gray-600 line-clamp-1">{bookAuthor}</p>
             </div>
-            {typeof bookRating === "number" && (
+            {typeof bookRating === 'number' && (
               <div className="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
                 {bookRating.toFixed(1)} ★
               </div>
@@ -172,9 +174,9 @@ const BookCard = ({
             className="w-full rounded-lg"
             disabled={actionDisabled}
             onClick={() => onRequest(bookId)}
-            variant={actionDisabled ? "secondary" : "default"}
+            variant={actionDisabled ? 'secondary' : 'default'}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onRequest(bookId);
               }

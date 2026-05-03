@@ -1,6 +1,10 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
 // Define basic mock models
+export interface Session {
+  user: User;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -112,7 +116,7 @@ class MockDB {
 
   private async getCollection<T>(key: MockDbCollectionKey): Promise<T[]> {
     const db = await this.dbPromise;
-    return (await db.get('collections', key)) || [];
+    return ((await db.get('collections', key)) as T[]) || [];
   }
 
   private async setCollection<T>(key: MockDbCollectionKey, data: T[]) {
@@ -171,9 +175,9 @@ class MockDB {
     await this.setCollection('messages', data);
   }
 
-  public async getSession() {
+  public async getSession(): Promise<Session | null> {
     const db = await this.dbPromise;
-    return (await db.get('collections', 'session')) || null;
+    return ((await db.get('collections', 'session')) as Session | undefined) || null;
   }
   public async setSession(data: Record<string, unknown> | null) {
     const db = await this.dbPromise;

@@ -1,8 +1,12 @@
-
-import { Button } from "@/components/ui/button";
-import { BookPlus, BookOpen, TrendingUp } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
-import { createFadeUpItem, createHoverLift, createStaggerContainer, pressScale } from "@/lib/motion";
+import { Button } from '@/components/ui/button';
+import { BookPlus, BookOpen, TrendingUp } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  createFadeUpItem,
+  createHoverLift,
+  createStaggerContainer,
+  pressScale,
+} from '@/lib/motion';
 
 interface WelcomeBannerProps {
   username?: string;
@@ -12,7 +16,7 @@ interface WelcomeBannerProps {
 }
 
 const WelcomeBanner = ({
-  username = "Reader",
+  username = 'Reader',
   onAddBook,
   bookCount = 0,
   activeExchangeCount = 0,
@@ -36,8 +40,7 @@ const WelcomeBanner = ({
             Welcome back, {username}!
           </h1>
           <p className="mt-2 text-white/90 max-w-md">
-            Manage your books, track exchanges, and connect with fellow readers
-            in your community.
+            Manage your books, track exchanges, and connect with fellow readers in your community.
           </p>
           <div className="flex items-center mt-4 space-x-4 text-sm text-white/80">
             <div className="flex items-center">
@@ -50,7 +53,11 @@ const WelcomeBanner = ({
             </div>
           </div>
         </motion.div>
-        <motion.div variants={itemVariants} whileHover={createHoverLift(shouldReduceMotion, -4)} whileTap={pressScale}>
+        <motion.div
+          variants={itemVariants}
+          whileHover={createHoverLift(shouldReduceMotion, -4)}
+          whileTap={pressScale}
+        >
           <Button
             onClick={onAddBook}
             variant="secondary"

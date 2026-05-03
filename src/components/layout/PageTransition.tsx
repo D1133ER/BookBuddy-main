@@ -1,13 +1,13 @@
-import { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { createPageVariants } from "@/lib/motion";
+import type { ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { createPageVariants } from '@/lib/motion';
 
 interface PageTransitionProps {
   children: ReactNode;
   className?: string;
 }
 
-export const PageTransition = ({ children, className = "" }: PageTransitionProps) => {
+export const PageTransition = ({ children, className = '' }: PageTransitionProps) => {
   const shouldReduceMotion = useReducedMotion() ?? false;
   const variants = createPageVariants(shouldReduceMotion);
 

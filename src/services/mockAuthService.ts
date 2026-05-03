@@ -1,4 +1,4 @@
-import { db, User } from '@/lib/mockDb';
+import { db, type User } from '@/lib/mockDb';
 
 export const login = async (username: string): Promise<User | null> => {
   const users = await db.getUsers();

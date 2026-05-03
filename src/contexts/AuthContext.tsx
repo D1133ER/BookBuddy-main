@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { getCurrentUser, login as signIn, logout as signOut, register as signUp } from '@/services';
 import { MOCK_DB_CHANGE_EVENT } from '@/lib/mockDb';
 

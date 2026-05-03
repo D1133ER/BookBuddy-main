@@ -1,13 +1,13 @@
-import { CatalogBook, realBookCatalog } from '@/lib/bookCatalog';
+import { type CatalogBook, realBookCatalog } from '@/lib/bookCatalog';
 import {
-  Book as MockBook,
-  Message as MockMessage,
-  Review as MockReview,
-  Transaction as MockTransaction,
-  User as MockUser,
+  type Book as MockBook,
+  type Message as MockMessage,
+  type Review as MockReview,
+  type Transaction as MockTransaction,
+  type User as MockUser,
   db,
 } from '@/lib/mockDb';
-import { Book as AppBook } from '@/types/book';
+import type { Book as AppBook } from '@/types/book';
 
 const SEED_VERSION_KEY = 'bookbuddy.seed.version';
 const SEED_VERSION = '2026-04-14.2';

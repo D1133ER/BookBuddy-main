@@ -6,6 +6,7 @@ class ResizeObserver {
   unobserve() {}
   disconnect() {}
 }
+// @ts-expect-error
 global.ResizeObserver = ResizeObserver;
 
 const mockMatchMedia = (query: string) => ({

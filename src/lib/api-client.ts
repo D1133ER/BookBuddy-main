@@ -1,4 +1,4 @@
-import { ApiError, AuthenticationError, ApiResponse } from '@/types/api';
+import { ApiError, AuthenticationError, type ApiResponse } from '@/types/api';
 
 interface RequestConfig extends RequestInit {
   params?: Record<string, string>;

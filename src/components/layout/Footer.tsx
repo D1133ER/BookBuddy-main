@@ -1,6 +1,5 @@
-
-import { Link } from "react-router-dom";
-import { Mail, MapPin, ShieldCheck } from "lucide-react";
+import { Link } from 'react-router-dom';
+import { Mail, MapPin, ShieldCheck } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -10,8 +9,8 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-xl font-bold">BookBuddy</h3>
             <p className="text-slate-300">
-              A local-first lending workflow for real neighborhoods. Share books,
-              coordinate pickup, and keep returns from slipping through the cracks.
+              A local-first lending workflow for real neighborhoods. Share books, coordinate pickup,
+              and keep returns from slipping through the cracks.
             </p>
             <div className="space-y-2 text-sm text-slate-200">
               <div className="flex items-center gap-2">
@@ -29,10 +28,7 @@ const Footer = () => {
             <h4 className="font-semibold text-lg">Explore</h4>
             <ul className="space-y-2">
               <li>
-                <Link
-                  to="/catalog"
-                  className="text-slate-300 hover:text-white transition-colors"
-                >
+                <Link to="/catalog" className="text-slate-300 hover:text-white transition-colors">
                   Book Catalog
                 </Link>
               </li>
@@ -67,18 +63,12 @@ const Footer = () => {
             <h4 className="font-semibold text-lg">Account</h4>
             <ul className="space-y-2">
               <li>
-                <Link
-                  to="/profile"
-                  className="text-slate-300 hover:text-white transition-colors"
-                >
+                <Link to="/profile" className="text-slate-300 hover:text-white transition-colors">
                   My Profile
                 </Link>
               </li>
               <li>
-                <Link
-                  to="/my-books"
-                  className="text-slate-300 hover:text-white transition-colors"
-                >
+                <Link to="/my-books" className="text-slate-300 hover:text-white transition-colors">
                   My Books
                 </Link>
               </li>
@@ -91,10 +81,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link
-                  to="/messages"
-                  className="text-slate-300 hover:text-white transition-colors"
-                >
+                <Link to="/messages" className="text-slate-300 hover:text-white transition-colors">
                   Messages
                 </Link>
               </li>
@@ -105,10 +92,7 @@ const Footer = () => {
             <h4 className="font-semibold text-lg">Support</h4>
             <ul className="space-y-2">
               <li>
-                <Link
-                  to="/register"
-                  className="text-slate-300 hover:text-white transition-colors"
-                >
+                <Link to="/register" className="text-slate-300 hover:text-white transition-colors">
                   Start Lending
                 </Link>
               </li>
@@ -129,10 +113,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link
-                  to="/messages"
-                  className="text-slate-300 hover:text-white transition-colors"
-                >
+                <Link to="/messages" className="text-slate-300 hover:text-white transition-colors">
                   Coordinate Pickups
                 </Link>
               </li>
@@ -146,7 +127,10 @@ const Footer = () => {
           </p>
           <div className="mt-4 md:mt-0 flex items-center space-x-2">
             <Mail className="h-4 w-4 text-slate-300" />
-            <a href="mailto:hello@bookbuddy.local" className="text-slate-300 text-sm hover:text-white transition-colors">
+            <a
+              href="mailto:hello@bookbuddy.local"
+              className="text-slate-300 text-sm hover:text-white transition-colors"
+            >
               hello@bookbuddy.local
             </a>
           </div>

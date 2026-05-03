@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BookCard from '../books/BookCard';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 
 interface FeaturedBooksProps {
   books?: Book[];

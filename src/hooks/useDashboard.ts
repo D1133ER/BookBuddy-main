@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTransactions, getConversations, getUserStats } from '@/services';
+import { getSmartSwapMatches } from '@/services/mockBookService';
 
 export const useDashboardStats = (userId: string) => {
   return useQuery({
@@ -28,6 +29,14 @@ export const useDashboardConversations = (userId: string) => {
   return useQuery({
     queryKey: ['dashboard', 'conversations', userId],
     queryFn: () => getConversations(),
+    enabled: !!userId,
+  });
+};
+
+export const useDashboardSmartSwaps = (userId: string) => {
+  return useQuery({
+    queryKey: ['dashboard', 'smart-swaps', userId],
+    queryFn: () => getSmartSwapMatches(userId),
     enabled: !!userId,
   });
 };

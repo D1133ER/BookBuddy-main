@@ -1,4 +1,4 @@
-import { db, User } from '@/lib/mockDb';
+import { db, type User } from '@/lib/mockDb';
 
 export const getProfile = async (): Promise<User | null> => {
   const session = await db.getSession();

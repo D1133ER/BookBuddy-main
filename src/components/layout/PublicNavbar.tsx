@@ -1,22 +1,22 @@
-import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Book, LogIn, LogOut, Menu, Search, X } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { type FormEvent, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Book, LogIn, LogOut, Menu, Search, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navLinkClassName =
-  "rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950";
+  'rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950';
 
 const actionLinkClassName =
-  "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors";
+  'inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors';
 
 const PublicNavbar = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { user, isLoggedIn, logout } = useAuth();
 
-  const displayName = user?.displayName || user?.username || "Member";
+  const displayName = user?.displayName || user?.username || 'Member';
 
   const closePanels = () => {
     setIsSearchOpen(false);
@@ -38,18 +38,24 @@ const PublicNavbar = () => {
   const handleLogout = () => {
     logout();
     closePanels();
-    navigate("/", { replace: true });
+    navigate('/', { replace: true });
   };
 
   return (
     <nav className="fixed left-0 top-0 z-50 w-full border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-6 lg:px-8">
       <div className="mx-auto flex h-[70px] max-w-7xl items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2" aria-label="Go to the BookBuddy homepage">
+          <Link
+            to="/"
+            className="flex items-center gap-2"
+            aria-label="Go to the BookBuddy homepage"
+          >
             <div className="rounded-lg bg-primary/10 p-1.5">
-              <Book className="h-5 w-5 text-primary" />
+              <Book className="h-5 w-5 text-indigo-600" />
             </div>
-            <span className="hidden text-xl font-bold tracking-tight text-slate-950 sm:inline">BookBuddy</span>
+            <span className="hidden text-xl font-bold tracking-tight text-slate-950 sm:inline">
+              BookBuddy
+            </span>
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
@@ -80,7 +86,9 @@ const PublicNavbar = () => {
         <div className="hidden items-center gap-2 md:flex">
           {isLoggedIn ? (
             <>
-              <span className="hidden text-sm font-medium text-slate-700 lg:inline">{displayName}</span>
+              <span className="hidden text-sm font-medium text-slate-700 lg:inline">
+                {displayName}
+              </span>
               <Link to="/dashboard" className={navLinkClassName}>
                 Dashboard
               </Link>
@@ -101,11 +109,17 @@ const PublicNavbar = () => {
             </>
           ) : (
             <>
-              <Link to="/login" className={`${actionLinkClassName} border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-100`}>
+              <Link
+                to="/login"
+                className={`${actionLinkClassName} border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-100`}
+              >
                 <LogIn className="mr-2 h-4 w-4" />
                 Login
               </Link>
-              <Link to="/register" className={`${actionLinkClassName} bg-primary text-white hover:bg-primary/90`}>
+              <Link
+                to="/register"
+                className={`${actionLinkClassName} bg-indigo-600 text-white hover:bg-indigo-700`}
+              >
                 Join BookBuddy
               </Link>
             </>
@@ -120,7 +134,7 @@ const PublicNavbar = () => {
               setIsMenuOpen(false);
             }}
             className="rounded-md p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
-            aria-label={isSearchOpen ? "Close mobile search" : "Open mobile search"}
+            aria-label={isSearchOpen ? 'Close mobile search' : 'Open mobile search'}
           >
             <Search className="h-5 w-5" />
           </button>
@@ -131,7 +145,7 @@ const PublicNavbar = () => {
               setIsSearchOpen(false);
             }}
             className="rounded-md p-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
-            aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -178,7 +192,9 @@ const PublicNavbar = () => {
 
             {isLoggedIn ? (
               <>
-                <div className="px-3 py-2 text-sm font-medium text-slate-700">Signed in as {displayName}</div>
+                <div className="px-3 py-2 text-sm font-medium text-slate-700">
+                  Signed in as {displayName}
+                </div>
                 <Link to="/dashboard" className={navLinkClassName} onClick={closePanels}>
                   Dashboard
                 </Link>
@@ -210,7 +226,7 @@ const PublicNavbar = () => {
                 <Link
                   to="/register"
                   onClick={closePanels}
-                  className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
                 >
                   Join BookBuddy
                 </Link>

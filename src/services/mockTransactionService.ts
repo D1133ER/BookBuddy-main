@@ -1,4 +1,4 @@
-import { db, Transaction } from '@/lib/mockDb';
+import { db, type Transaction } from '@/lib/mockDb';
 import { mapMockBookToAppBook } from '@/lib/mockDbSeed';
 
 export const getTransactions = async (filters: {

@@ -8,75 +8,75 @@ type CoverPalette = {
 
 const coverPalettes: CoverPalette[] = [
   {
-    background: "#171B3A",
-    panel: "#F8FAFC",
-    accent: "#6D6AF8",
-    text: "#111827",
-    muted: "#CBD5E1",
+    background: '#171B3A',
+    panel: '#F8FAFC',
+    accent: '#6D6AF8',
+    text: '#111827',
+    muted: '#CBD5E1',
   },
   {
-    background: "#0F3D3E",
-    panel: "#F0FDFA",
-    accent: "#14B8A6",
-    text: "#0F172A",
-    muted: "#99F6E4",
+    background: '#0F3D3E',
+    panel: '#F0FDFA',
+    accent: '#14B8A6',
+    text: '#0F172A',
+    muted: '#99F6E4',
   },
   {
-    background: "#4C1D95",
-    panel: "#F5F3FF",
-    accent: "#8B5CF6",
-    text: "#1F2937",
-    muted: "#DDD6FE",
+    background: '#4C1D95',
+    panel: '#F5F3FF',
+    accent: '#8B5CF6',
+    text: '#1F2937',
+    muted: '#DDD6FE',
   },
   {
-    background: "#7C2D12",
-    panel: "#FFF7ED",
-    accent: "#F97316",
-    text: "#111827",
-    muted: "#FED7AA",
+    background: '#7C2D12',
+    panel: '#FFF7ED',
+    accent: '#F97316',
+    text: '#111827',
+    muted: '#FED7AA',
   },
   {
-    background: "#0F172A",
-    panel: "#F8FAFC",
-    accent: "#38BDF8",
-    text: "#0F172A",
-    muted: "#BFDBFE",
+    background: '#0F172A',
+    panel: '#F8FAFC',
+    accent: '#38BDF8',
+    text: '#0F172A',
+    muted: '#BFDBFE',
   },
   {
-    background: "#3F1D2E",
-    panel: "#FFF1F2",
-    accent: "#F43F5E",
-    text: "#1F2937",
-    muted: "#FECDD3",
+    background: '#3F1D2E',
+    panel: '#FFF1F2',
+    accent: '#F43F5E',
+    text: '#1F2937',
+    muted: '#FECDD3',
   },
   {
-    background: "#1F2937",
-    panel: "#F9FAFB",
-    accent: "#F59E0B",
-    text: "#111827",
-    muted: "#FDE68A",
+    background: '#1F2937',
+    panel: '#F9FAFB',
+    accent: '#F59E0B',
+    text: '#111827',
+    muted: '#FDE68A',
   },
   {
-    background: "#1C1917",
-    panel: "#FAFAF9",
-    accent: "#22C55E",
-    text: "#111827",
-    muted: "#BBF7D0",
+    background: '#1C1917',
+    panel: '#FAFAF9',
+    accent: '#22C55E',
+    text: '#111827',
+    muted: '#BBF7D0',
   },
 ];
 
 const escapeXml = (value: string) =>
   value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
 const splitTitleLines = (title: string, maxCharacters = 16) => {
   const words = title.split(/\s+/);
   const lines: string[] = [];
-  let currentLine = "";
+  let currentLine = '';
 
   words.forEach((word) => {
     const candidate = currentLine ? `${currentLine} ${word}` : word;
@@ -118,7 +118,7 @@ export const createBookCoverDataUri = ({
       (line, index) =>
         `<text x="48" y="${176 + index * 42}" font-family="Verdana,Arial,sans-serif" font-size="30" font-weight="700" fill="${palette.text}">${escapeXml(line)}</text>`,
     )
-    .join("");
+    .join('');
 
   return toDataUri(`
     <svg width="320" height="480" viewBox="0 0 320 480" fill="none" xmlns="http://www.w3.org/2000/svg">

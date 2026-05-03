@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  CatalogBook,
+  type CatalogBook,
   createDashboardPopularBooks,
   createDashboardRecentTransactions,
   createDemoBorrowedBooks,
@@ -111,5 +111,10 @@ export const useAdvancedCatalogSearch = (books: CatalogBook[]) => {
       });
   }, [books, filters]);
 
-  return { filteredBooks, filters, setFilters };
+  return {
+    filteredBooks,
+    filters,
+    setFilters,
+    totalResults: filteredBooks.length,
+  };
 };

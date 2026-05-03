@@ -1,16 +1,16 @@
-import { motion, useReducedMotion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import PageTransition from "@/components/layout/PageTransition";
-import ProfileCard from "@/components/profile/ProfileCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import BookCard from "@/components/books/BookCard";
-import { useCatalogData } from "@/hooks/useCatalogData";
-import { createFadeUpItem, createStaggerContainer } from "@/lib/motion";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { motion, useReducedMotion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import PageTransition from '@/components/layout/PageTransition';
+import ProfileCard from '@/components/profile/ProfileCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import BookCard from '@/components/books/BookCard';
+import { useCatalogData } from '@/hooks/useCatalogData';
+import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -23,23 +23,24 @@ const Profile = () => {
 
   const handleEditProfile = () => {
     toast({
-      title: "Profile synced",
-      description: "Your BookBuddy account details are already connected. A full profile editor can be added next.",
+      title: 'Profile synced',
+      description:
+        'Your BookBuddy account details are already connected. A full profile editor can be added next.',
     });
   };
 
   const handleRequestBook = (id: string) => {
     if (profileOwnedBooks.some((entry) => entry.id === id)) {
-      navigate("/my-books");
+      navigate('/my-books');
       toast({
-        title: "Manage your shelf in My Books",
-        description: "Use My Books to pause lending or make a title available again.",
+        title: 'Manage your shelf in My Books',
+        description: 'Use My Books to pause lending or make a title available again.',
       });
       return;
     }
 
     if (profileBorrowedBooks.some((entry) => entry.id === id)) {
-      navigate("/transactions");
+      navigate('/transactions');
     }
   };
 
@@ -64,10 +65,12 @@ const Profile = () => {
                 user={{
                   id: user.id,
                   name: user.displayName || user.username,
-                  username: user.username?.toLowerCase() || "user",
+                  username: user.username?.toLowerCase() || 'user',
                   avatar: user?.avatarUrl,
-                  bio: user.bio || "Book enthusiast with a balanced shelf of speculative fiction, memoirs, and conversation-starting nonfiction.",
-                  location: user.location || "BookBuddy community",
+                  bio:
+                    user.bio ||
+                    'Book enthusiast with a balanced shelf of speculative fiction, memoirs, and conversation-starting nonfiction.',
+                  location: user.location || 'BookBuddy community',
                   joinDate: new Date().toISOString(),
                   stats: {
                     books: profileOwnedBooks.length,
@@ -91,7 +94,10 @@ const Profile = () => {
                 <TabsContent value="my-books">
                   <Card>
                     <CardContent className="p-6">
-                      <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                      <motion.div
+                        variants={containerVariants}
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                      >
                         {profileOwnedBooks.map((book) => (
                           <motion.div key={book.id} variants={itemVariants}>
                             <BookCard
@@ -118,7 +124,10 @@ const Profile = () => {
                   <Card>
                     <CardContent className="p-6">
                       {profileBorrowedBooks.length > 0 ? (
-                        <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <motion.div
+                          variants={containerVariants}
+                          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                        >
                           {profileBorrowedBooks.map((book) => (
                             <motion.div key={book.id} variants={itemVariants}>
                               <BookCard
@@ -153,7 +162,8 @@ const Profile = () => {
                     <CardContent className="p-6">
                       <div className="text-center py-12">
                         <p className="text-muted-foreground">
-                          Your exchange history will appear here as your next lending cycles complete.
+                          Your exchange history will appear here as your next lending cycles
+                          complete.
                         </p>
                       </div>
                     </CardContent>

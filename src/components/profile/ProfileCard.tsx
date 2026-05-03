@@ -1,9 +1,9 @@
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen, MessageSquare, Star, Edit } from "lucide-react";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, MessageSquare, Star, Edit, Trophy } from 'lucide-react';
+import { ACHIEVEMENTS } from '@/lib/achievements';
 
 interface ProfileCardProps {
   user: {
@@ -18,6 +18,8 @@ interface ProfileCardProps {
       books: number;
       exchanges: number;
       rating: number;
+      lents?: number;
+      reviews?: number;
     };
   };
   isCurrentUser?: boolean;
@@ -25,24 +27,21 @@ interface ProfileCardProps {
   onMessage?: () => void;
 }
 
-const ProfileCard = ({
-  user,
-  isCurrentUser = false,
-  onEdit,
-  onMessage,
-}: ProfileCardProps) => {
+const ProfileCard = ({ user, isCurrentUser = false, onEdit, onMessage }: ProfileCardProps) => {
   const defaultUser = {
-    id: "user-1",
-    name: "Jane Doe",
-    username: "janedoe",
-    avatar: "jane",
-    bio: "Book lover and collector. Always looking for new reads!",
-    location: "San Francisco, CA",
-    joinDate: "2023-01-15",
+    id: 'user-1',
+    name: 'Jane Doe',
+    username: 'janedoe',
+    avatar: 'jane',
+    bio: 'Book lover and collector. Always looking for new reads!',
+    location: 'San Francisco, CA',
+    joinDate: '2023-01-15',
     stats: {
       books: 24,
       exchanges: 12,
       rating: 4.8,
+      lents: 0,
+      reviews: 0,
     },
   };
 
@@ -90,18 +89,15 @@ const ProfileCard = ({
 
         <div className="flex flex-wrap gap-2">
           {displayUser.location && (
-            <Badge
-              variant="outline"
-              className="bg-blue-50 text-blue-700 border-blue-200"
-            >
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               {displayUser.location}
             </Badge>
           )}
           <Badge variant="outline">
-            Joined{" "}
+            Joined{' '}
             {joinDate.toLocaleDateString(undefined, {
-              month: "long",
-              year: "numeric",
+              month: 'long',
+              year: 'numeric',
             })}
           </Badge>
         </div>
@@ -118,21 +114,43 @@ const ProfileCard = ({
             <div className="flex justify-center mb-1">
               <MessageSquare className="h-5 w-5 text-primary" />
             </div>
-            <p className="text-xl font-bold">
-              {displayUser.stats?.exchanges || 0}
-            </p>
+            <p className="text-xl font-bold">{displayUser.stats?.exchanges || 0}</p>
             <p className="text-xs text-muted-foreground">Exchanges</p>
           </div>
           <div className="text-center p-3 bg-muted/50 rounded-lg">
             <div className="flex justify-center mb-1">
               <Star className="h-5 w-5 text-yellow-500" />
             </div>
-            <p className="text-xl font-bold">
-              {displayUser.stats?.rating || 0}
-            </p>
+            <p className="text-xl font-bold">{displayUser.stats?.rating || 0}</p>
             <p className="text-xs text-muted-foreground">Rating</p>
           </div>
         </div>
+
+        {displayUser.stats && (
+          <div className="pt-4">
+            <h3 className="text-sm font-semibold mb-2 flex items-center">
+              <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+              Achievements
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {ACHIEVEMENTS.filter((a) =>
+                a.requirement({
+                  transactionsCount: displayUser.stats?.exchanges || 0,
+                  reviewsCount: displayUser.stats?.reviews || 0,
+                  booksLentCount: displayUser.stats?.lents || 0,
+                }),
+              ).map((achievement) => (
+                <Badge
+                  key={achievement.id}
+                  title={achievement.description}
+                  className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-help"
+                >
+                  {achievement.icon} {achievement.title}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,4 +1,4 @@
-import { db, Review } from '@/lib/mockDb';
+import { db, type Review } from '@/lib/mockDb';
 
 export type ReviewData = Review;
 export type ReviewInsert = Omit<Review, 'id' | 'created_at' | 'reviewee_id'> & {

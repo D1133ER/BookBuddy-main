@@ -43,7 +43,7 @@ const Register = () => {
       navigate('/dashboard');
     } catch (err: unknown) {
       if (err instanceof ZodError) {
-        setError(err.errors[0]?.message ?? 'Invalid input');
+        setError(err.issues[0]?.message ?? 'Invalid input');
       } else {
         setError(getErrorMessage(err, 'Failed to register. Please try again.'));
       }
@@ -61,7 +61,7 @@ const Register = () => {
             <div className="mb-8">
               <Link to="/" className="flex items-center gap-2 mb-8">
                 <div className="bg-primary/10 p-2 rounded-xl">
-                  <Book className="h-6 w-6 text-primary" />
+                  <Book className="h-6 w-6 text-indigo-600" />
                 </div>
                 <span className="text-2xl font-bold text-gray-900">BookBuddy</span>
               </Link>

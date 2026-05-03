@@ -1,42 +1,29 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  Search,
-  Book,
-  MessageSquare,
-  LogIn,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Book, MessageSquare, LogIn, LogOut, Menu, X } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/contexts/AuthContext";
-import { getInitials } from "@/lib/helpers";
+} from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { getInitials } from '@/lib/helpers';
 
 const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const { user, isLoggedIn, logout } = useAuth();
-  
-  const displayName = user?.displayName || user?.username || "Guest";
-  const username = user?.username || "guest";
+
+  const displayName = user?.displayName || user?.username || 'Guest';
+  const username = user?.username || 'guest';
   const avatarUrl = user?.avatarUrl;
 
   const handleSearch = (e: React.FormEvent) => {
@@ -49,7 +36,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/", { replace: true });
+    navigate('/', { replace: true });
   };
 
   return (
@@ -58,7 +45,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center">
           <div className="bg-primary/10 p-1.5 rounded-lg mr-2">
-            <Book className="h-5 w-5 text-primary" />
+            <Book className="h-5 w-5 text-indigo-600" />
           </div>
           <span className="text-xl font-bold hidden sm:inline text-gray-900 tracking-tight">
             BookBuddy
@@ -110,7 +97,7 @@ const Navbar = () => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
-            aria-label={isSearchOpen ? "Close mobile search" : "Open mobile search"}
+            aria-label={isSearchOpen ? 'Close mobile search' : 'Open mobile search'}
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -128,9 +115,7 @@ const Navbar = () => {
                 >
                   <Avatar>
                     <AvatarImage src={avatarUrl || undefined} alt={`${displayName} avatar`} />
-                    <AvatarFallback>
-                      {getInitials(displayName)}
-                    </AvatarFallback>
+                    <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -163,10 +148,7 @@ const Navbar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={handleLogout}
-                >
+                <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
@@ -198,7 +180,7 @@ const Navbar = () => {
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between py-4">
                     <div className="flex items-center">
-                      <Book className="h-6 w-6 text-primary mr-2" />
+                      <Book className="h-6 w-6 text-indigo-600 mr-2" />
                       <span className="text-xl font-bold">BookBuddy</span>
                     </div>
                     <SheetClose asChild>
@@ -226,36 +208,24 @@ const Navbar = () => {
 
                     <div className="flex flex-col space-y-3">
                       <SheetClose asChild>
-                        <Link
-                          to="/"
-                          className="py-2 px-3 rounded-md hover:bg-gray-100"
-                        >
+                        <Link to="/" className="py-2 px-3 rounded-md hover:bg-gray-100">
                           Home
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link
-                          to="/catalog"
-                          className="py-2 px-3 rounded-md hover:bg-gray-100"
-                        >
+                        <Link to="/catalog" className="py-2 px-3 rounded-md hover:bg-gray-100">
                           Catalog
                         </Link>
                       </SheetClose>
                       {isLoggedIn ? (
                         <>
                           <SheetClose asChild>
-                            <Link
-                              to="/my-books"
-                              className="py-2 px-3 rounded-md hover:bg-gray-100"
-                            >
+                            <Link to="/my-books" className="py-2 px-3 rounded-md hover:bg-gray-100">
                               My Books
                             </Link>
                           </SheetClose>
                           <SheetClose asChild>
-                            <Link
-                              to="/messages"
-                              className="py-2 px-3 rounded-md hover:bg-gray-100"
-                            >
+                            <Link to="/messages" className="py-2 px-3 rounded-md hover:bg-gray-100">
                               Messages
                             </Link>
                           </SheetClose>
@@ -268,10 +238,7 @@ const Navbar = () => {
                             </Link>
                           </SheetClose>
                           <SheetClose asChild>
-                            <Link
-                              to="/profile"
-                              className="py-2 px-3 rounded-md hover:bg-gray-100"
-                            >
+                            <Link to="/profile" className="py-2 px-3 rounded-md hover:bg-gray-100">
                               Profile
                             </Link>
                           </SheetClose>
@@ -288,10 +255,7 @@ const Navbar = () => {
                       ) : (
                         <>
                           <SheetClose asChild>
-                            <Link
-                              to="/login"
-                              className="py-2 px-3 rounded-md hover:bg-gray-100"
-                            >
+                            <Link to="/login" className="py-2 px-3 rounded-md hover:bg-gray-100">
                               <LogIn className="h-4 w-4 inline mr-2" />
                               Login
                             </Link>

@@ -1,5 +1,4 @@
-import { Component, ErrorInfo, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -25,10 +24,17 @@ class ErrorBoundary extends Component<Props, State> {
     if (import.meta.env.DEV) {
       console.error('Uncaught error:', error, errorInfo);
     }
-    
-    // You can log to an error tracking service here
-    // e.g., Sentry.captureException(error);
   }
+
+  private handleRetry = () => {
+    this.setState({ hasError: false, error: null }, () => {
+      window.location.reload();
+    });
+  };
+
+  private goHome = () => {
+    window.location.href = '/';
+  };
 
   public render() {
     if (this.state.hasError) {
@@ -37,7 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-8">
+        <div className="min-h-[400px] flex items-center justify-center p-8 bg-gray-50">
           <div className="text-center space-y-4">
             <div className="text-6xl">⚠️</div>
             <h2 className="text-2xl font-bold text-gray-900">Something went wrong</h2>
@@ -46,18 +52,17 @@ class ErrorBoundary extends Component<Props, State> {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => this.setState({ hasError: false, error: null })}
-                type="button"
-                className="inline-flex items-center justify-center rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-100 hover:text-slate-950"
+                onClick={this.handleRetry}
+                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:border-gray-400 cursor-pointer"
               >
                 Try Again
               </button>
-              <Link
-                to="/"
-                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+              <button
+                onClick={this.goHome}
+                className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 cursor-pointer"
               >
                 Go Home
-              </Link>
+              </button>
             </div>
           </div>
         </div>

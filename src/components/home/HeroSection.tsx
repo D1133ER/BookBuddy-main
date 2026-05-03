@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, Users, MapPin, Heart } from 'lucide-react';
+import { ArrowRight, BookOpen, MapPin, Heart } from 'lucide-react';
 
 interface HeroSectionProps {
   title?: string;

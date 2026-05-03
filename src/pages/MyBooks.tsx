@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, BookOpen, BookX, Loader2, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import { toast } from 'sonner';
 import { createFadeUpItem, createStaggerContainer } from '@/lib/motion';
 import { DEFAULT_BOOK_COVER } from '@/lib/mockDbSeed';
@@ -62,7 +62,7 @@ const AddBookForm = ({ onAddBook, onClose, isSubmitting }: AddBookFormProps) => 
 
     if (!result.success) {
       const errors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
+      result.error.issues.forEach((err) => {
         const field = err.path[0] as string;
         errors[field] = err.message;
       });
@@ -240,7 +240,10 @@ const MyBooks = () => {
       const book = userBooks.find((book) => book.id === id);
       if (!book) return;
 
-      await toggleAvailabilityMutation.mutateAsync({ id, available: !book.available });
+      await toggleAvailabilityMutation.mutateAsync({
+        id,
+        available: !book.available,
+      });
       toast.success('Success', {
         description: `Book marked as ${!book.available ? 'available' : 'unavailable'}.`,
       });
@@ -272,7 +275,10 @@ const MyBooks = () => {
 
   const handleReturnBook = async (transactionId: string) => {
     try {
-      await updateStatusMutation.mutateAsync({ id: transactionId, status: 'completed' });
+      await updateStatusMutation.mutateAsync({
+        id: transactionId,
+        status: 'completed',
+      });
       toast.success('Return recorded', {
         description: 'The book is now marked as returned and available again for the lender.',
       });

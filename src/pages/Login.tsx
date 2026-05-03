@@ -36,7 +36,7 @@ const Login = () => {
       loginSchema.parse({ email, password });
     } catch (validationError: unknown) {
       if (validationError instanceof ZodError) {
-        setError(validationError.errors[0]?.message ?? 'Invalid input');
+        setError(validationError.issues[0]?.message ?? 'Invalid input');
       } else {
         setError(getErrorMessage(validationError, 'Invalid input'));
       }
@@ -64,7 +64,7 @@ const Login = () => {
             <div className="mb-8">
               <Link to="/" className="flex items-center gap-2 mb-8">
                 <div className="bg-primary/10 p-2 rounded-xl">
-                  <Book className="h-6 w-6 text-primary" />
+                  <Book className="h-6 w-6 text-indigo-600" />
                 </div>
                 <span className="text-2xl font-bold text-gray-900">BookBuddy</span>
               </Link>
@@ -119,7 +119,7 @@ const Login = () => {
                     </Label>
                     <a
                       href="mailto:hello@bookbuddy.local?subject=BookBuddy%20sign-in%20help"
-                      className="text-sm font-medium text-primary hover:text-primary/60 transition-colors"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
                     >
                       Need sign-in help?
                     </a>

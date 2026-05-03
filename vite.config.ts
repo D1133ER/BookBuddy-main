@@ -1,20 +1,18 @@
-import path from "path";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import path from 'path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: process.env.NODE_ENV === "development" ? "/" : process.env.VITE_BASE_PATH || "/",
+  base: process.env.NODE_ENV === 'development' ? '/' : process.env.VITE_BASE_PATH || '/',
   optimizeDeps: {
-    entries: ["src/main.tsx"],
+    entries: ['src/main.tsx'],
   },
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     preserveSymlinks: true,
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
   build: {
@@ -30,10 +28,20 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Manual chunks for better caching
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'framer-motion': ['framer-motion'],
-          'ui-components': ['./src/components/ui/button', './src/components/ui/card', './src/components/ui/input'],
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/react') ||
+            id.includes('node_modules/react-dom') ||
+            id.includes('node_modules/react-router-dom')
+          ) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/framer-motion')) {
+            return 'framer-motion';
+          }
+          if (id.includes('src/components/ui/')) {
+            return 'ui-components';
+          }
         },
         // Better chunk naming
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -43,7 +51,7 @@ export default defineConfig({
     },
   },
   server: {
-    // @ts-ignore
+    // @ts-expect-error
     allowedHosts: true,
-  }
+  },
 });

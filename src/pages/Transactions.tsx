@@ -65,7 +65,7 @@ const toTransactionView = (
       id: book.id,
       title: book.title,
       author: book.author,
-      coverImage: book.cover_image || DEFAULT_BOOK_COVER,
+      coverImage: book.coverImage || DEFAULT_BOOK_COVER,
       condition: book.condition,
     },
     type: transaction.status === 'completed' ? 'return' : isBorrower ? 'borrow' : 'lend',

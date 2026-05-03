@@ -1,6 +1,6 @@
-import { memo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Users } from "lucide-react";
+import { memo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3, TrendingUp, Users } from 'lucide-react';
 
 interface ActivityChartProps {
   title?: string;
@@ -15,29 +15,30 @@ interface ActivityChartProps {
 }
 
 const ActivityChart = ({
-  title = "Your Monthly Activity",
+  title = 'Your Monthly Activity',
   data = [],
   totalExchanges = 0,
   approvalRate = 0,
   activeThreads = 0,
 }: ActivityChartProps) => {
-  const chartData = data.length > 0
-    ? data.map((item, index) => ({
-        ...item,
-        color:
-          item.color ||
-          (index >= Math.max(0, data.length - 2)
-            ? "from-indigo-400 to-indigo-600"
-            : "from-blue-400 to-blue-600"),
-      }))
-    : [
-        { month: "Jan", value: 0, color: "from-slate-300 to-slate-400" },
-        { month: "Feb", value: 0, color: "from-slate-300 to-slate-400" },
-        { month: "Mar", value: 0, color: "from-slate-300 to-slate-400" },
-        { month: "Apr", value: 0, color: "from-slate-300 to-slate-400" },
-        { month: "May", value: 0, color: "from-slate-300 to-slate-400" },
-        { month: "Jun", value: 0, color: "from-slate-300 to-slate-400" },
-      ];
+  const chartData =
+    data.length > 0
+      ? data.map((item, index) => ({
+          ...item,
+          color:
+            item.color ||
+            (index >= Math.max(0, data.length - 2)
+              ? 'from-indigo-400 to-indigo-600'
+              : 'from-blue-400 to-blue-600'),
+        }))
+      : [
+          { month: 'Jan', value: 0, color: 'from-slate-300 to-slate-400' },
+          { month: 'Feb', value: 0, color: 'from-slate-300 to-slate-400' },
+          { month: 'Mar', value: 0, color: 'from-slate-300 to-slate-400' },
+          { month: 'Apr', value: 0, color: 'from-slate-300 to-slate-400' },
+          { month: 'May', value: 0, color: 'from-slate-300 to-slate-400' },
+          { month: 'Jun', value: 0, color: 'from-slate-300 to-slate-400' },
+        ];
   const maxValue = Math.max(...chartData.map((item) => item.value), 1);
 
   return (
@@ -49,18 +50,17 @@ const ActivityChart = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] flex items-end justify-between gap-2 pt-4 px-2" role="img" aria-label={`Monthly activity chart: ${chartData.map((d) => `${d.month} ${d.value} exchanges`).join(", ")}`}>
+        <div
+          className="h-[300px] flex items-end justify-between gap-2 pt-4 px-2"
+          role="img"
+          aria-label={`Monthly activity chart: ${chartData.map((d) => `${d.month} ${d.value} exchanges`).join(', ')}`}
+        >
           {chartData.map((item, index) => {
-            const isHighest =
-              item.value === Math.max(...chartData.map((d) => d.value));
-            const isLowest =
-              item.value === Math.min(...chartData.map((d) => d.value));
+            const isHighest = item.value === Math.max(...chartData.map((d) => d.value));
+            const isLowest = item.value === Math.min(...chartData.map((d) => d.value));
 
             return (
-              <div
-                key={index}
-                className="flex flex-col items-center flex-1 group"
-              >
+              <div key={index} className="flex flex-col items-center flex-1 group">
                 <div className="relative w-full">
                   {isHighest && (
                     <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -68,8 +68,10 @@ const ActivityChart = ({
                     </div>
                   )}
                   <div
-                    className={`w-full bg-gradient-to-t ${item.color} rounded-t-md group-hover:shadow-lg transition-all duration-200 ${isHighest ? "ring-2 ring-green-400 ring-opacity-50" : ""} ${isLowest ? "ring-2 ring-red-400 ring-opacity-50" : ""}`}
-                    style={{ height: `${Math.max(18, (item.value / maxValue) * 180)}px` }}
+                    className={`w-full bg-gradient-to-t ${item.color} rounded-t-md group-hover:shadow-lg transition-all duration-200 ${isHighest ? 'ring-2 ring-green-400 ring-opacity-50' : ''} ${isLowest ? 'ring-2 ring-red-400 ring-opacity-50' : ''}`}
+                    style={{
+                      height: `${Math.max(18, (item.value / maxValue) * 180)}px`,
+                    }}
                   ></div>
                 </div>
                 <div className="w-full text-center mt-2 relative">

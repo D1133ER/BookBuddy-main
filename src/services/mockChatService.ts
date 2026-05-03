@@ -3,7 +3,7 @@
  * Enables real-time messaging with the server
  */
 
-import { io, Socket } from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
 import { db } from '@/lib/mockDb';
 import { MOCK_DB_CHANGE_EVENT } from '@/lib/mockDb';
 
@@ -64,6 +64,10 @@ class ChatService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private messageQueue: Array<{ recipientId: string; content: string }> = [];
+
+  getSocket(): Socket | null {
+    return this.socket;
+  }
 
   constructor() {
     this.initSocket();

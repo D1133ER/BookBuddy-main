@@ -11,11 +11,11 @@ const PORT = process.env.PORT || 3001;
 const httpServer = createServer();
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
+	cors: {
+		origin: process.env.CLIENT_URL || "http://localhost:5173",
+		methods: ["GET", "POST"],
+		credentials: true,
+	},
 });
 
 // Store connected users: Map<userId, Set<socketId>>
@@ -25,121 +25,132 @@ const onlineUsers = new Map();
 const messageHistory = new Map(); // Map<conversationId, Message[]>
 
 io.on("connection", (socket) => {
-  console.log(`[Socket.IO] Client connected: ${socket.id}`);
+	console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
-  // User joins with their user ID
-  socket.on("user:join", (userId) => {
-    console.log(`[Socket.IO] User ${userId} joined with socket ${socket.id}`);
-    
-    if (!onlineUsers.has(userId)) {
-      onlineUsers.set(userId, new Set());
-    }
-    onlineUsers.get(userId).add(socket.id);
+	// User joins with their user ID
+	socket.on("user:join", (userId) => {
+		console.log(`[Socket.IO] User ${userId} joined with socket ${socket.id}`);
 
-    // Broadcast user's online status to all connected clients
-    io.emit("user:status", { userId, isOnline: true });
+		if (!onlineUsers.has(userId)) {
+			onlineUsers.set(userId, new Set());
+		}
+		onlineUsers.get(userId).add(socket.id);
 
-    // Send list of online users to the joining user
-    const onlineUserIds = Array.from(onlineUsers.keys());
-    socket.emit("users:online", onlineUserIds);
-  });
+		// Broadcast user's online status to all connected clients
+		io.emit("user:status", { userId, isOnline: true });
 
-  // Handle private message
-  socket.on("message:private", (data) => {
-    const { recipientId, senderId, content, timestamp, messageId } = data;
-    console.log(`[Socket.IO] Private message from ${senderId} to ${recipientId}`);
+		// Send list of online users to the joining user
+		const onlineUserIds = Array.from(onlineUsers.keys());
+		socket.emit("users:online", onlineUserIds);
+	});
 
-    const message = {
-      id: messageId,
-      senderId,
-      recipientId,
-      content,
-      timestamp: timestamp || new Date().toISOString(),
-    };
+	// Handle joining a room (lounge)
+	socket.on("room:join", (roomName) => {
+		socket.join(roomName);
+		console.log(`[Socket.IO] User joined room: ${roomName}`);
+	});
 
-    // Store in history
-    const conversationId = [senderId, recipientId].sort().join("-");
-    if (!messageHistory.has(conversationId)) {
-      messageHistory.set(conversationId, []);
-    }
-    messageHistory.get(conversationId).push(message);
+	// Handle room message
+	socket.on("message:room", (data) => {
+		const { roomName, senderId, content, timestamp, messageId } = data;
+		console.log(`[Socket.IO] Room message to ${roomName} from ${senderId}`);
 
-    // Send to recipient if online
-    const recipientSockets = onlineUsers.get(recipientId);
-    if (recipientSockets) {
-      recipientSockets.forEach((socketId) => {
-        io.to(socketId).emit("message:new", message);
-      });
-    }
+		const message = {
+			id: messageId,
+			senderId,
+			roomName,
+			content,
+			timestamp: timestamp || new Date().toISOString(),
+		};
 
-    // Send back to sender for confirmation
-    socket.emit("message:sent", message);
-  });
+		// Store in history
+		if (!messageHistory.has(roomName)) {
+			messageHistory.set(roomName, []);
+		}
+		messageHistory.get(roomName).push(message);
 
-  // Handle typing indicator
-  socket.on("typing:start", ({ senderId, recipientId }) => {
-    console.log(`[Socket.IO] ${senderId} is typing to ${recipientId}`);
-    const recipientSockets = onlineUsers.get(recipientId);
-    if (recipientSockets) {
-      recipientSockets.forEach((socketId) => {
-        io.to(socketId).emit("typing:update", { userId: senderId, isTyping: true });
-      });
-    }
-  });
+		// Broadcast to room
+		io.to(roomName).emit("message:new", message);
+	});
 
-  socket.on("typing:stop", ({ senderId, recipientId }) => {
-    console.log(`[Socket.IO] ${senderId} stopped typing to ${recipientId}`);
-    const recipientSockets = onlineUsers.get(recipientId);
-    if (recipientSockets) {
-      recipientSockets.forEach((socketId) => {
-        io.to(socketId).emit("typing:update", { userId: senderId, isTyping: false });
-      });
-    }
-  });
+	// Handle leave room
+	socket.on("room:leave", (roomName) => {
+		socket.leave(roomName);
+		console.log(`[Socket.IO] User left room: ${roomName}`);
+	});
 
-  // Handle read receipt
-  socket.on("message:read", ({ conversationId, readerId, readBy }) => {
-    console.log(`[Socket.IO] Messages in ${conversationId} read by ${readBy}`);
-    
-    // Notify the other user
-    const otherUserId = conversationId.replace(readBy, "").replace("-", "");
-    const otherUserSockets = onlineUsers.get(otherUserId);
-    if (otherUserSockets) {
-      otherUserSockets.forEach((socketId) => {
-        io.to(socketId).emit("message:read", { conversationId, readBy });
-      });
-    }
-  });
+	// Handle typing indicator
+	socket.on("typing:start", ({ senderId, recipientId }) => {
+		console.log(`[Socket.IO] ${senderId} is typing to ${recipientId}`);
+		const recipientSockets = onlineUsers.get(recipientId);
+		if (recipientSockets) {
+			recipientSockets.forEach((socketId) => {
+				io.to(socketId).emit("typing:update", {
+					userId: senderId,
+					isTyping: true,
+				});
+			});
+		}
+	});
 
-  // Get message history for a conversation
-  socket.on("message:history", ({ userId, otherUserId }, callback) => {
-    const conversationId = [userId, otherUserId].sort().join("-");
-    const history = messageHistory.get(conversationId) || [];
-    console.log(`[Socket.IO] Sending history for ${conversationId}: ${history.length} messages`);
-    callback(history);
-  });
+	socket.on("typing:stop", ({ senderId, recipientId }) => {
+		console.log(`[Socket.IO] ${senderId} stopped typing to ${recipientId}`);
+		const recipientSockets = onlineUsers.get(recipientId);
+		if (recipientSockets) {
+			recipientSockets.forEach((socketId) => {
+				io.to(socketId).emit("typing:update", {
+					userId: senderId,
+					isTyping: false,
+				});
+			});
+		}
+	});
 
-  // Handle disconnection
-  socket.on("disconnect", () => {
-    console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+	// Handle read receipt
+	socket.on("message:read", ({ conversationId, readerId, readBy }) => {
+		console.log(`[Socket.IO] Messages in ${conversationId} read by ${readBy}`);
 
-    // Find and remove user from online users
-    for (const [userId, sockets] of onlineUsers.entries()) {
-      if (sockets.has(socket.id)) {
-        sockets.delete(socket.id);
-        if (sockets.size === 0) {
-          onlineUsers.delete(userId);
-          // Broadcast user's offline status
-          io.emit("user:status", { userId, isOnline: false });
-        }
-        break;
-      }
-    }
-  });
+		// Notify the other user
+		const otherUserId = conversationId.replace(readBy, "").replace("-", "");
+		const otherUserSockets = onlineUsers.get(otherUserId);
+		if (otherUserSockets) {
+			otherUserSockets.forEach((socketId) => {
+				io.to(socketId).emit("message:read", { conversationId, readBy });
+			});
+		}
+	});
+
+	// Get message history for a conversation
+	socket.on("message:history", ({ userId, otherUserId }, callback) => {
+		const conversationId = [userId, otherUserId].sort().join("-");
+		const history = messageHistory.get(conversationId) || [];
+		console.log(
+			`[Socket.IO] Sending history for ${conversationId}: ${history.length} messages`,
+		);
+		callback(history);
+	});
+
+	// Handle disconnection
+	socket.on("disconnect", () => {
+		console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+
+		// Find and remove user from online users
+		for (const [userId, sockets] of onlineUsers.entries()) {
+			if (sockets.has(socket.id)) {
+				sockets.delete(socket.id);
+				if (sockets.size === 0) {
+					onlineUsers.delete(userId);
+					// Broadcast user's offline status
+					io.emit("user:status", { userId, isOnline: false });
+				}
+				break;
+			}
+		}
+	});
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`
+	console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
 ║   🚀 BookBuddy Chat Server running on port ${PORT}          ║

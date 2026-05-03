@@ -31,6 +31,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Transactions = lazy(() => import('./pages/Transactions'));
 const Messages = lazy(() => import('./pages/Messages'));
+const CommunityLounges = lazy(() => import('./pages/CommunityLounges'));
 
 function App() {
   const location = useLocation();
@@ -106,6 +107,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Messages />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/lounges"
+                  element={
+                    <ProtectedRoute>
+                      <CommunityLounges />
                     </ProtectedRoute>
                   }
                 />
